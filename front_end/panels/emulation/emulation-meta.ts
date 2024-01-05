@@ -110,27 +110,28 @@ UI.ActionRegistration.registerActionExtension({
   title: i18nLazyString(UIStrings.captureScreenshot),
 });
 
-UI.ActionRegistration.registerActionExtension({
-  actionId: 'emulation.capture-full-height-screenshot',
-  category: UI.ActionRegistration.ActionCategory.SCREENSHOT,
-  async loadActionDelegate() {
-    const Emulation = await loadEmulationModule();
-    return Emulation.DeviceModeWrapper.ActionDelegate.instance();
-  },
-  condition: Root.Runtime.ConditionName.CAN_DOCK,
-  title: i18nLazyString(UIStrings.captureFullSizeScreenshot),
-});
+// TODO: Implement and enable capture full size screenshot and capture node screenshot
+// UI.ActionRegistration.registerActionExtension({
+//   actionId: 'emulation.capture-full-height-screenshot',
+//   category: UI.ActionRegistration.ActionCategory.SCREENSHOT,
+//   async loadActionDelegate() {
+//     const Emulation = await loadEmulationModule();
+//     return Emulation.DeviceModeWrapper.ActionDelegate.instance();
+//   },
+//   condition: Root.Runtime.ConditionName.CAN_DOCK,
+//   title: i18nLazyString(UIStrings.captureFullSizeScreenshot),
+// });
 
-UI.ActionRegistration.registerActionExtension({
-  actionId: 'emulation.capture-node-screenshot',
-  category: UI.ActionRegistration.ActionCategory.SCREENSHOT,
-  async loadActionDelegate() {
-    const Emulation = await loadEmulationModule();
-    return Emulation.DeviceModeWrapper.ActionDelegate.instance();
-  },
-  condition: Root.Runtime.ConditionName.CAN_DOCK,
-  title: i18nLazyString(UIStrings.captureNodeScreenshot),
-});
+// UI.ActionRegistration.registerActionExtension({
+//   actionId: 'emulation.capture-node-screenshot',
+//   category: UI.ActionRegistration.ActionCategory.SCREENSHOT,
+//   async loadActionDelegate() {
+//     const Emulation = await loadEmulationModule();
+//     return Emulation.DeviceModeWrapper.ActionDelegate.instance();
+//   },
+//   condition: Root.Runtime.ConditionName.CAN_DOCK,
+//   title: i18nLazyString(UIStrings.captureNodeScreenshot),
+// });
 
 Common.Settings.registerSettingExtension({
   category: Common.Settings.SettingCategory.MOBILE,

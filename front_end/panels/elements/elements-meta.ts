@@ -344,16 +344,17 @@ UI.ActionRegistration.registerActionExtension({
   ],
 });
 
-UI.ActionRegistration.registerActionExtension({
-  actionId: 'elements.capture-area-screenshot',
-  async loadActionDelegate() {
-    const Elements = await loadElementsModule();
-    return Elements.InspectElementModeController.ToggleSearchActionDelegate.instance();
-  },
-  condition: Root.Runtime.ConditionName.CAN_DOCK,
-  title: i18nLazyString(UIStrings.captureAreaScreenshot),
-  category: UI.ActionRegistration.ActionCategory.SCREENSHOT,
-});
+// TODO: Implement and enable capture area screenshot
+// UI.ActionRegistration.registerActionExtension({
+//   actionId: 'elements.capture-area-screenshot',
+//   async loadActionDelegate() {
+//     const Elements = await loadElementsModule();
+//     return Elements.InspectElementModeController.ToggleSearchActionDelegate.instance();
+//   },
+//   condition: Root.Runtime.ConditionName.CAN_DOCK,
+//   title: i18nLazyString(UIStrings.captureAreaScreenshot),
+//   category: UI.ActionRegistration.ActionCategory.SCREENSHOT,
+// });
 
 UI.ActionRegistration.registerActionExtension({
   category: UI.ActionRegistration.ActionCategory.ELEMENTS,

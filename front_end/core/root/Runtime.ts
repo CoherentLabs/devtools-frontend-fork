@@ -567,6 +567,6 @@ export enum ExperimentName {
 // TODO(crbug.com/1167717): Make this a const enum again
 // eslint-disable-next-line rulesdir/const_enum
 export enum ConditionName {
-  CAN_DOCK = 'can_dock',
+  CAN_DOCK = '!can_dock',
   NOT_SOURCES_HIDE_ADD_FOLDER = '!sources.hide_add_folder',
 }

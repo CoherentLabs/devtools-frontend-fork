@@ -42,8 +42,9 @@ export class ScreenCaptureModel extends SDKModel implements ProtocolProxyApi.Pag
       format: Protocol.Page.CaptureScreenshotRequestFormat, quality: number,
       clip?: Protocol.Page.Viewport): Promise<string|null> {
     await OverlayModel.muteHighlight();
+    // TODO: Implement working fromSurface and captureBeyondViewport params and enable them here
     const result = await this.agent.invoke_captureScreenshot(
-        {format, quality, clip, fromSurface: true, captureBeyondViewport: true});
+        {format, quality, clip, /* fromSurface: true, captureBeyondViewport: true */});
     await OverlayModel.unmuteHighlight();
     return result.data;
   }

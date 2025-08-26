@@ -1491,6 +1491,14 @@ export class DOMModel extends SDKModel<EventTypes> {
     return this.nodeForId(containerNodeId);
   }
 
+  async getDataBindingDataForNode(nodeId: Protocol.DOM.NodeId): Promise<Protocol.DOM.GetDataBindingDataForNodeResponse|null> {
+    const response = await this.agent.invoke_getDataBindingDataForNode({nodeId});
+    if (response.getError()) {
+      return null;
+    }
+    return response;
+  }
+
   pushObjectAsNodeToFrontend(object: RemoteObject): Promise<DOMNode|null> {
     return object.isNode() ? this.pushNodeToFrontend((object.objectId as string)) : Promise.resolve(null);
   }

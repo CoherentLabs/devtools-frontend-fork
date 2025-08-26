@@ -230,6 +230,7 @@ inspectorBackend.registerCommand("DOM.undo", [], []);
 inspectorBackend.registerCommand("DOM.getFrameOwner", [{"name": "frameId", "type": "string", "optional": false}], ["backendNodeId", "nodeId"]);
 inspectorBackend.registerCommand("DOM.getContainerForNode", [{"name": "nodeId", "type": "number", "optional": false}, {"name": "containerName", "type": "string", "optional": true}], ["nodeId"]);
 inspectorBackend.registerCommand("DOM.getQueryingDescendantsForContainer", [{"name": "nodeId", "type": "number", "optional": false}], ["nodeIds"]);
+inspectorBackend.registerCommand("DOM.getDataBindingDataForNode", [{"name": "nodeId", "type": "number", "optional": false}], ["dataBindAttributes"]);
 
 // DOMDebugger.
 inspectorBackend.registerEnum("DOMDebugger.DOMBreakpointType", {SubtreeModified: "subtree-modified", AttributeModified: "attribute-modified", NodeRemoved: "node-removed"});

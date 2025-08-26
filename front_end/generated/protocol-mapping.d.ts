@@ -1624,6 +1624,15 @@ export namespace ProtocolMapping {
       returnType: Protocol.DOM.GetQueryingDescendantsForContainerResponse;
     };
     /**
+     * COHERENT_BEGIN
+     * Returns an array of DataBindAttributeData for each data-bind
+     * attribute of the selected node
+     */
+    'DOM.getDataBindingDataForNode': {
+      paramsType: [Protocol.DOM.GetDataBindingDataForNodeRequest];
+      returnType: Protocol.DOM.GetDataBindingDataForNodeResponse;
+    };
+    /**
      * Returns event listeners of the given object.
      */
     'DOMDebugger.getEventListeners': {

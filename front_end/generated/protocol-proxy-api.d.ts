@@ -1027,6 +1027,13 @@ declare namespace ProtocolProxyApi {
      */
     invoke_getQueryingDescendantsForContainer(params: Protocol.DOM.GetQueryingDescendantsForContainerRequest): Promise<Protocol.DOM.GetQueryingDescendantsForContainerResponse>;
 
+    /**
+     * COHERENT_BEGIN
+     * Returns an array of DataBindAttributeData for each data-bind
+     * attribute of the selected node
+     */
+    invoke_getDataBindingDataForNode(params: Protocol.DOM.GetDataBindingDataForNodeRequest): Promise<Protocol.DOM.GetDataBindingDataForNodeResponse>;
+
   }
   export interface DOMDispatcher {
     /**

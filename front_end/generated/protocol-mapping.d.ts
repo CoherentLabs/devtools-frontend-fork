@@ -77,6 +77,10 @@ export namespace ProtocolMapping {
      */
     'Cast.issueUpdated': [Protocol.Cast.IssueUpdatedEvent];
     /**
+     * Fired when `SynchronizeModels()`is called.
+     */
+    'DOM.dataBindingModelsSynchronized': [];
+    /**
      * Fired when `Element`'s attribute is modified.
      */
     'DOM.attributeModified': [Protocol.DOM.AttributeModifiedEvent];

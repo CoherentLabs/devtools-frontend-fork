@@ -5786,6 +5786,10 @@
             ],
             "events": [
                 {
+                    "name": "dataBindingModelsSynchronized",
+                    "description": "Fired when `SynchronizeModels()`is called."
+                },
+                {
                     "name": "attributeModified",
                     "description": "Fired when `Element`'s attribute is modified.",
                     "parameters": [

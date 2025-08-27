@@ -2678,6 +2678,10 @@ domain DOM
       NodeId nodeId
     returns
       array of DataBindAttributeData dataBindAttributes
+
+  # Fired when `SynchronizeModels()`is called.
+  event dataBindingModelsSynchronized
+
 # COHERENT_END
 
   # Fired when `Element`'s attribute is modified.

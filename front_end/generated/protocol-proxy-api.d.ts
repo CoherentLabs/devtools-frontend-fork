@@ -1037,6 +1037,11 @@ declare namespace ProtocolProxyApi {
   }
   export interface DOMDispatcher {
     /**
+     * Fired when `SynchronizeModels()`is called.
+     */
+    dataBindingModelsSynchronized(): void;
+
+    /**
      * Fired when `Element`'s attribute is modified.
      */
     attributeModified(params: Protocol.DOM.AttributeModifiedEvent): void;

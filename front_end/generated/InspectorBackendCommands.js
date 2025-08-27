@@ -168,6 +168,7 @@ inspectorBackend.registerCommand("Cast.stopCasting", [{"name": "sinkName", "type
 inspectorBackend.registerEnum("DOM.PseudoType", {FirstLine: "first-line", FirstLetter: "first-letter", Before: "before", After: "after", Marker: "marker", Backdrop: "backdrop", Selection: "selection", TargetText: "target-text", SpellingError: "spelling-error", GrammarError: "grammar-error", Highlight: "highlight", FirstLineInherited: "first-line-inherited", Scrollbar: "scrollbar", ScrollbarThumb: "scrollbar-thumb", ScrollbarButton: "scrollbar-button", ScrollbarTrack: "scrollbar-track", ScrollbarTrackPiece: "scrollbar-track-piece", ScrollbarCorner: "scrollbar-corner", Resizer: "resizer", InputListButton: "input-list-button"});
 inspectorBackend.registerEnum("DOM.ShadowRootType", {UserAgent: "user-agent", Open: "open", Closed: "closed"});
 inspectorBackend.registerEnum("DOM.CompatibilityMode", {QuirksMode: "QuirksMode", LimitedQuirksMode: "LimitedQuirksMode", NoQuirksMode: "NoQuirksMode"});
+inspectorBackend.registerEvent("DOM.dataBindingModelsSynchronized", []);
 inspectorBackend.registerEvent("DOM.attributeModified", ["nodeId", "name", "value"]);
 inspectorBackend.registerEvent("DOM.attributeRemoved", ["nodeId", "name"]);
 inspectorBackend.registerEvent("DOM.characterDataModified", ["nodeId", "characterData"]);

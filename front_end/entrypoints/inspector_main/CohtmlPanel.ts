@@ -115,7 +115,6 @@ const UIStrings = {
   memoryStr: 'Capacity Memory:',
 
 };
-const SCRATCH_LAYERS_ID = 1;
 const str_ = i18n.i18n.registerUIStrings('entrypoints/inspector_main/CohtmlPanel.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 
@@ -347,17 +346,6 @@ export class CohtmlPanelView extends UI.Widget.VBox implements SDK.TargetManager
       buttonWrapper.appendChild(entryButton);
 
       buttonWrapper.createChild('div', 'icon');
-
-      // We need to make sure that the Scratch Layers are aways used with MBs because their minimum capacity memory is 4MB
-      // and it does not make sense to set them in kbs or bytes. We recognize them by their id/position that is comming from the C++.
-      // Make sure when you change their position in C++ - static constexpr InternalCaches s_ProcessedCaches[], to reflect the change here in SCRATCH_LAYERS_ID as well.
-      if (unitSelect && id === SCRATCH_LAYERS_ID) {
-        unitSelect.value = 'MBs';
-        unitSelect.disabled = true;
-
-        const warning = row.createChild('div', 'cache-option');
-        warning.innerHTML="<span style='color:red;margin-right:3px;'>WARNING:</span> Scratch layer capacity memory cannot be set to less than 4MB!"
-      }
 
       entryButton.onclick = this.cacheUpdateHandler(id, entryInput, unitSelect);
 

@@ -77,6 +77,10 @@ export namespace ProtocolMapping {
      */
     'Cast.issueUpdated': [Protocol.Cast.IssueUpdatedEvent];
     /**
+     * Fired when `SynchronizeModels()`is called.
+     */
+    'DOM.dataBindingModelsSynchronized': [];
+    /**
      * Fired when `Element`'s attribute is modified.
      */
     'DOM.attributeModified': [Protocol.DOM.AttributeModifiedEvent];
@@ -1622,6 +1626,15 @@ export namespace ProtocolMapping {
     'DOM.getQueryingDescendantsForContainer': {
       paramsType: [Protocol.DOM.GetQueryingDescendantsForContainerRequest];
       returnType: Protocol.DOM.GetQueryingDescendantsForContainerResponse;
+    };
+    /**
+     * COHERENT_BEGIN
+     * Returns an array of DataBindAttributeData for each data-bind
+     * attribute of the selected node
+     */
+    'DOM.getDataBindingDataForNode': {
+      paramsType: [Protocol.DOM.GetDataBindingDataForNodeRequest];
+      returnType: Protocol.DOM.GetDataBindingDataForNodeResponse;
     };
     /**
      * Returns event listeners of the given object.

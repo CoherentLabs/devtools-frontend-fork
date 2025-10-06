@@ -1288,6 +1288,10 @@ export class DOMModel extends SDKModel<EventTypes> {
     }
   }
 
+  dataBindingModelsSynchronized(): void {
+    this.dispatchEventToListeners(Events.DataBindingModelsSynchronized);
+  }
+
   setChildNodes(parentId: number, payloads: Protocol.DOM.Node[]): void {
     if (!parentId && payloads.length) {
       this.setDetachedRoot(payloads[0]);
@@ -1491,6 +1495,14 @@ export class DOMModel extends SDKModel<EventTypes> {
     return this.nodeForId(containerNodeId);
   }
 
+  async getDataBindingDataForNode(nodeId: Protocol.DOM.NodeId): Promise<Protocol.DOM.GetDataBindingDataForNodeResponse|null> {
+    const response = await this.agent.invoke_getDataBindingDataForNode({nodeId});
+    if (response.getError()) {
+      return null;
+    }
+    return response;
+  }
+
   pushObjectAsNodeToFrontend(object: RemoteObject): Promise<DOMNode|null> {
     return object.isNode() ? this.pushNodeToFrontend((object.objectId as string)) : Promise.resolve(null);
   }
@@ -1534,6 +1546,7 @@ export enum Events {
   ChildNodeCountUpdated = 'ChildNodeCountUpdated',
   DistributedNodesChanged = 'DistributedNodesChanged',
   MarkersChanged = 'MarkersChanged',
+  DataBindingModelsSynchronized = "DataBindingModelsSynchronized",
 }
 
 export type EventTypes = {
@@ -1547,6 +1560,7 @@ export type EventTypes = {
   [Events.ChildNodeCountUpdated]: DOMNode,
   [Events.DistributedNodesChanged]: DOMNode,
   [Events.MarkersChanged]: DOMNode,
+  [Events.DataBindingModelsSynchronized]: void,
 };
 
 class DOMDispatcher implements ProtocolProxyApi.DOMDispatcher {
@@ -1557,6 +1571,10 @@ class DOMDispatcher implements ProtocolProxyApi.DOMDispatcher {
 
   documentUpdated(): void {
     this.domModel.documentUpdated();
+  }
+
+  dataBindingModelsSynchronized(): void {
+    this.domModel.dataBindingModelsSynchronized();
   }
 
   attributeModified({nodeId, name, value}: Protocol.DOM.AttributeModifiedEvent): void {

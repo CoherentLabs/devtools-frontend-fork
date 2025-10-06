@@ -2884,6 +2884,33 @@ declare namespace Protocol {
     }
 
     /**
+     * COHERENT_BEGIN
+     */
+    export interface DataBindAttributeData {
+      attributeName: string;
+      attributeValue: string;
+      /**
+       * Normally each data-bind attribute has exactly one mutator,
+       * except for data-bind-class-toggle attribute, where
+       * each separate class (and sub-expression) is a different mutator.
+       */
+      mutators: MutatorData[];
+    }
+
+    export interface MutatorData {
+      parsingError?: string;
+      compilationError?: string;
+      evaluationNodes: DataBindNode[];
+    }
+
+    export interface DataBindNode {
+      evaluatableExpression: string;
+      evaluatedValue: string;
+      syncStatus: boolean;
+      evaluationError?: string;
+    }
+
+    /**
      * DOM interaction is implemented in terms of mirror objects that represent the actual DOM nodes.
      * DOMNode is a base node mirror type.
      */
@@ -3796,6 +3823,14 @@ declare namespace Protocol {
        * Descendant nodes with container queries against the given container.
        */
       nodeIds: NodeId[];
+    }
+
+    export interface GetDataBindingDataForNodeRequest {
+      nodeId: NodeId;
+    }
+
+    export interface GetDataBindingDataForNodeResponse extends ProtocolResponseWithError {
+      dataBindAttributes: DataBindAttributeData[];
     }
 
     /**

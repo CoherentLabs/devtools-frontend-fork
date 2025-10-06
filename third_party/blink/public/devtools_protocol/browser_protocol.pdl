@@ -2032,6 +2032,30 @@ domain DOM
       LimitedQuirksMode
       NoQuirksMode
 
+# COHERENT_BEGIN
+  type DataBindAttributeData extends object
+    properties
+      string attributeName
+      string attributeValue
+      # Normally each data-bind attribute has exactly one mutator, 
+      # except for data-bind-class-toggle attribute, where
+      # each separate class (and sub-expression) is a different mutator.
+      array of MutatorData mutators
+
+  type MutatorData extends object
+    properties
+      optional string parsingError
+      optional string compilationError
+      array of DataBindNode evaluationNodes
+
+  type DataBindNode extends object
+    properties
+      string evaluatableExpression
+      string evaluatedValue
+      boolean syncStatus
+      optional string evaluationError
+# COHERENT_END
+
   # DOM interaction is implemented in terms of mirror objects that represent the actual DOM nodes.
   # DOMNode is a base node mirror type.
   type Node extends object
@@ -2645,6 +2669,20 @@ domain DOM
     returns
       # Descendant nodes with container queries against the given container.
       array of NodeId nodeIds
+
+# COHERENT_BEGIN
+  # Returns an array of DataBindAttributeData for each data-bind
+  # attribute of the selected node 
+  command getDataBindingDataForNode
+    parameters
+      NodeId nodeId
+    returns
+      array of DataBindAttributeData dataBindAttributes
+
+  # Fired when `SynchronizeModels()`is called.
+  event dataBindingModelsSynchronized
+
+# COHERENT_END
 
   # Fired when `Element`'s attribute is modified.
   event attributeModified

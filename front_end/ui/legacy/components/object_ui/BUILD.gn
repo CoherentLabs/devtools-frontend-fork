@@ -63,6 +63,7 @@ devtools_entrypoint("bundle") {
     "../../../../panels/profiler/*",
     "../../../../panels/sources/*",
     "../source_frame/*",
+    "../../../../entrypoints/inspector_main/*",
   ]
 
   visibility += devtools_ui_legacy_visibility

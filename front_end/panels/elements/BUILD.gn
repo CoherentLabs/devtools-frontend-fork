@@ -47,6 +47,7 @@ devtools_module("elements") {
     "StylePropertyHighlighter.ts",
     "StylePropertyTreeElement.ts",
     "StylesSidebarPane.ts",
+    "DataBindingSidebarPane.ts",
   ]
 
   deps = [

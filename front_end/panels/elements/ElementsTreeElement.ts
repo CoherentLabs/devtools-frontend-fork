@@ -194,6 +194,12 @@ const UIStrings = {
   * the overlay showing CSS scroll snapping for the current element.
   */
   disableScrollSnap: 'Disable scroll-snap overlay',
+  /* COHERENT_BEGIN */
+  /**
+  *@description A context menu item in the Elements Tree Element of the Elements panel
+  */
+  openInDataBindingTab: 'Open in Data-Binding Tab',
+  /* COHERENT_END */
 };
 const str_ = i18n.i18n.registerUIStrings('panels/elements/ElementsTreeElement.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
@@ -227,7 +233,13 @@ export class ElementsTreeElement extends UI.TreeOutline.TreeElement {
   _searchHighlightsVisible?: boolean;
   selectionElement?: HTMLDivElement;
   _hintElement?: HTMLElement;
-
+  static createExclamationMark(tooltip: string): Element {
+    const exclamationElement = document.createElement('span', { is: 'dt-icon-label' }) as UI.UIUtils.DevToolsIconLabel;
+    exclamationElement.type = 'smallicon-warning';
+    exclamationElement.className = 'exclamation-mark';
+    UI.Tooltip.Tooltip.install(exclamationElement, tooltip);
+    return exclamationElement;
+  }
   constructor(node: SDK.DOMModel.DOMNode, isClosingTag?: boolean) {
     // The title will be updated in onattach.
     super();
@@ -623,6 +635,11 @@ export class ElementsTreeElement extends UI.TreeOutline.TreeElement {
     }
     contextMenu.editSection().appendItem(
         i18nString(UIStrings.addAttribute), treeElement._addNewAttribute.bind(treeElement));
+    /* COHERENT_BEGIN */
+    contextMenu.editSection().appendItem(i18nString(UIStrings.openInDataBindingTab), () => {
+      UI.ViewManager.ViewManager.instance().showView('elements.data-binding-sidebar');
+    });
+    /* COHERENT_END */
 
     const target = (event.target as Element);
     const attribute = target.enclosingNodeOrSelfWithClass('webkit-html-attribute');
@@ -1288,6 +1305,9 @@ export class ElementsTreeElement extends UI.TreeOutline.TreeElement {
       // fixme: make it clear that `this.title = x` is a setter with significant side effects
       this.title = highlightElement;
       this.updateDecorations();
+      if (this.node().attributes().find((attr) => attr.name.startsWith('data-bind'))) {
+        this.listItemElement.insertBefore(ElementsTreeElement.createExclamationMark('Data binding warning'), this.listItemElement.firstChild);
+      }
       this.listItemElement.insertBefore(this._gutterContainer, this.listItemElement.firstChild);
       if (!this._isClosingTag && this._adornerContainer) {
         this.listItemElement.appendChild(this._adornerContainer);
@@ -1441,7 +1461,7 @@ export class ElementsTreeElement extends UI.TreeOutline.TreeElement {
     let highlightCount = 0;
     let additionalHighlightOffset = 0;
 
-    function setValueWithEntities(this: ElementsTreeElement, element: Element, value: string): void {
+    function setValueWithEntities(this: ElementsTreeElement, element: Element, value: string, dataBindAttr = false): void {
       const result = this._convertWhitespaceToEntities(value);
       highlightCount = result.entityRanges.length;
       value = result.text.replace(closingPunctuationRegex, (match, replaceOffset) => {
@@ -1457,7 +1477,40 @@ export class ElementsTreeElement extends UI.TreeOutline.TreeElement {
         result.entityRanges[highlightIndex].offset += additionalHighlightOffset;
         ++highlightIndex;
       }
-      element.setTextContentTruncatedIfNeeded(value);
+      /* COHERENT_BEGIN */
+      if (!dataBindAttr) {
+        element.setTextContentTruncatedIfNeeded(value);
+      } else {
+        const regex = /\{\{([^}]|}(?!}))*\}\}/g;
+        let lastIndex = 0;
+        let match: RegExpExecArray | null;
+        const plainValue = value.replace(/[\u200B-\u200D\uFEFF]/g, '');
+        while ((match = regex.exec(plainValue)) !== null) {
+          // Text before the expression
+          if (match.index > lastIndex) {
+            const textSpan = document.createElement('span');
+            textSpan.textContent = plainValue.slice(lastIndex, match.index);
+            element.appendChild(textSpan);
+          }
+
+          // Expression span
+          const exprSpan = document.createElement('span');
+          exprSpan.classList.add('data-bind-expression');
+          exprSpan.textContent = match[0];
+          element.appendChild(exprSpan);
+
+          lastIndex = match.index + match[0].length;
+        }
+
+        // Remaining text
+        if (lastIndex < plainValue.length) {
+          const remainingSpan = document.createElement('span');
+          remainingSpan.textContent = plainValue.slice(lastIndex);
+          element.appendChild(remainingSpan);
+        }
+        // value.matchAll()
+      }
+      /* COHERENT_END */
       UI.UIUtils.highlightRangesWithStyleClass(element, result.entityRanges, 'webkit-html-entity-value');
     }
 
@@ -1511,7 +1564,9 @@ export class ElementsTreeElement extends UI.TreeOutline.TreeElement {
     } else if (nodeName === 'image' && (name === 'xlink:href' || name === 'href')) {
       attrValueElement.appendChild(linkifySrcset.call(this, value));
     } else {
-      setValueWithEntities.call(this, attrValueElement, value);
+      /* COHERENT_BEGIN */
+      setValueWithEntities.call(this, attrValueElement, value, attrNameElement.textContent.startsWith('data-bind') || attrNameElement.textContent.startsWith('data-meta-for-element'));
+      /* COHERENT_END */
     }
 
     if (hasText) {

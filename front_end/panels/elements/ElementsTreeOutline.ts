@@ -38,6 +38,9 @@ import * as Common from '../../core/common/common.js';
 import * as i18n from '../../core/i18n/i18n.js';
 import * as SDK from '../../core/sdk/sdk.js';
 import * as UI from '../../ui/legacy/legacy.js';
+/* COHERENT_BEGIN */
+import { PopoverRequest } from '../../ui/legacy/PopoverHelper.js';
+/* COHERENT_END */
 
 import {linkifyDeferredNodeReference} from './DOMLinkifier.js';
 import {ElementsPanel} from './ElementsPanel.js';
@@ -97,6 +100,9 @@ export class ElementsTreeOutline extends UI.TreeOutline.TreeOutline {
   _treeElementBeingDragged?: ElementsTreeElement;
   _dragOverTreeElement?: ElementsTreeElement;
   _updateModifiedNodesTimeout?: number;
+  /* COHERENT_BEGIN */
+  _popoverHelper: UI.PopoverHelper.PopoverHelper;
+  /* COHERENT_END */
 
   constructor(omitRootDOMNode?: boolean, selectEnabled?: boolean, hideGutter?: boolean) {
     super();
@@ -105,7 +111,13 @@ export class ElementsTreeOutline extends UI.TreeOutline.TreeOutline {
     this._shadowRoot = UI.Utils.createShadowRootWithCoreStyles(
         shadowContainer, {cssFile: 'panels/elements/elementsTreeOutline.css', delegatesFocus: undefined});
     const outlineDisclosureElement = this._shadowRoot.createChild('div', 'elements-disclosure');
-
+    /* COHERENT_BEGIN */
+    this._popoverHelper = new UI.PopoverHelper.PopoverHelper(
+      this.element,
+      this._requestPopover.bind(this),
+    );
+    this._popoverHelper.setTimeout(0, 0);
+    /* COHERENT_END */
     this._element = this.element;
     this._element.classList.add('elements-tree-outline', 'source-code');
     if (hideGutter) {
@@ -174,7 +186,30 @@ export class ElementsTreeOutline extends UI.TreeOutline.TreeOutline {
   static forDOMModel(domModel: SDK.DOMModel.DOMModel): ElementsTreeOutline|null {
     return elementsTreeOutlineByDOMModel.get(domModel) || null;
   }
+  /* COHERENT_BEGIN */
+  _requestPopover(event: MouseEvent): PopoverRequest | null {
+    const target = event.target as HTMLElement;
+    if (!target?.classList.contains('data-bind-expression')) {
+      return null;
+    }
 
+    return {
+      box: target.boxInWindow(),
+      show: (popover: UI.GlassPane.GlassPane) => {
+        const container = document.createElement('div');
+        container.classList.add('bind-expression-popover');
+
+        const rawExpr = target.textContent || '';
+        const expr = rawExpr.replace(/^\{\{|\}\}$/g, '');
+
+        container.textContent = `Evaluated: ${expr}`;
+
+        popover.contentElement.appendChild(container);
+        return Promise.resolve(true);
+      }
+    };
+  }
+  /* COHERENT_END */
   _onShowHTMLCommentsChange(): void {
     const selectedNode = this.selectedDOMNode();
     if (selectedNode && selectedNode.nodeType() === Node.COMMENT_NODE && !this._showHTMLCommentsSetting.get()) {

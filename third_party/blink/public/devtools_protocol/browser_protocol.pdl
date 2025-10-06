@@ -2679,6 +2679,26 @@ domain DOM
     returns
       array of DataBindAttributeData dataBindAttributes
 
+  command getDataBindingModels
+    parameters
+      optional boolean verbose
+      optional string modelName
+    returns
+      any models
+
+  command getDataBindingModelNames
+    returns
+      array of string models
+
+  command updateDataBindingValue
+    parameters
+      string path
+      string newValue
+
+  command importDataBindingModels
+    parameters
+      object modelsJSON
+
   # Fired when `SynchronizeModels()`is called.
   event dataBindingModelsSynchronized
 

@@ -1636,6 +1636,22 @@ export namespace ProtocolMapping {
       paramsType: [Protocol.DOM.GetDataBindingDataForNodeRequest];
       returnType: Protocol.DOM.GetDataBindingDataForNodeResponse;
     };
+    'DOM.getDataBindingModels': {
+      paramsType: [Protocol.DOM.GetDataBindingModelsRequest?];
+      returnType: Protocol.DOM.GetDataBindingModelsResponse;
+    };
+    'DOM.getDataBindingModelNames': {
+      paramsType: [];
+      returnType: Protocol.DOM.GetDataBindingModelNamesResponse;
+    };
+    'DOM.updateDataBindingValue': {
+      paramsType: [Protocol.DOM.UpdateDataBindingValueRequest];
+      returnType: void;
+    };
+    'DOM.importDataBindingModels': {
+      paramsType: [Protocol.DOM.ImportDataBindingModelsRequest];
+      returnType: void;
+    };
     /**
      * Returns event listeners of the given object.
      */

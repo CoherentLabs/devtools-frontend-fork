@@ -5782,6 +5782,61 @@
                             }
                         }
                     ]
+                },
+                {
+                    "name": "getDataBindingModels",
+                    "parameters": [
+                        {
+                            "name": "verbose",
+                            "optional": true,
+                            "type": "boolean"
+                        },
+                        {
+                            "name": "modelName",
+                            "optional": true,
+                            "type": "string"
+                        }
+                    ],
+                    "returns": [
+                        {
+                            "name": "models",
+                            "type": "any"
+                        }
+                    ]
+                },
+                {
+                    "name": "getDataBindingModelNames",
+                    "returns": [
+                        {
+                            "name": "models",
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "updateDataBindingValue",
+                    "parameters": [
+                        {
+                            "name": "path",
+                            "type": "string"
+                        },
+                        {
+                            "name": "newValue",
+                            "type": "string"
+                        }
+                    ]
+                },
+                {
+                    "name": "importDataBindingModels",
+                    "parameters": [
+                        {
+                            "name": "modelsJSON",
+                            "type": "object"
+                        }
+                    ]
                 }
             ],
             "events": [

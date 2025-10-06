@@ -232,6 +232,10 @@ inspectorBackend.registerCommand("DOM.getFrameOwner", [{"name": "frameId", "type
 inspectorBackend.registerCommand("DOM.getContainerForNode", [{"name": "nodeId", "type": "number", "optional": false}, {"name": "containerName", "type": "string", "optional": true}], ["nodeId"]);
 inspectorBackend.registerCommand("DOM.getQueryingDescendantsForContainer", [{"name": "nodeId", "type": "number", "optional": false}], ["nodeIds"]);
 inspectorBackend.registerCommand("DOM.getDataBindingDataForNode", [{"name": "nodeId", "type": "number", "optional": false}], ["dataBindAttributes"]);
+inspectorBackend.registerCommand("DOM.getDataBindingModels", [{"name": "verbose", "type": "boolean", "optional": true}, {"name": "modelName", "type": "string", "optional": true}], ["models"]);
+inspectorBackend.registerCommand("DOM.getDataBindingModelNames", [], ["models"]);
+inspectorBackend.registerCommand("DOM.updateDataBindingValue", [{"name": "path", "type": "string", "optional": false}, {"name": "newValue", "type": "string", "optional": false}], []);
+inspectorBackend.registerCommand("DOM.importDataBindingModels", [{"name": "modelsJSON", "type": "object", "optional": false}], []);
 
 // DOMDebugger.
 inspectorBackend.registerEnum("DOMDebugger.DOMBreakpointType", {SubtreeModified: "subtree-modified", AttributeModified: "attribute-modified", NodeRemoved: "node-removed"});

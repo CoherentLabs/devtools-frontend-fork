@@ -1034,6 +1034,14 @@ declare namespace ProtocolProxyApi {
      */
     invoke_getDataBindingDataForNode(params: Protocol.DOM.GetDataBindingDataForNodeRequest): Promise<Protocol.DOM.GetDataBindingDataForNodeResponse>;
 
+    invoke_getDataBindingModels(params: Protocol.DOM.GetDataBindingModelsRequest): Promise<Protocol.DOM.GetDataBindingModelsResponse>;
+
+    invoke_getDataBindingModelNames(): Promise<Protocol.DOM.GetDataBindingModelNamesResponse>;
+
+    invoke_updateDataBindingValue(params: Protocol.DOM.UpdateDataBindingValueRequest): Promise<Protocol.ProtocolResponseWithError>;
+
+    invoke_importDataBindingModels(params: Protocol.DOM.ImportDataBindingModelsRequest): Promise<Protocol.ProtocolResponseWithError>;
+
   }
   export interface DOMDispatcher {
     /**

@@ -3833,6 +3833,28 @@ declare namespace Protocol {
       dataBindAttributes: DataBindAttributeData[];
     }
 
+    export interface GetDataBindingModelsRequest {
+      verbose?: boolean;
+      modelName?: string;
+    }
+
+    export interface GetDataBindingModelsResponse extends ProtocolResponseWithError {
+      models: any;
+    }
+
+    export interface GetDataBindingModelNamesResponse extends ProtocolResponseWithError {
+      models: string[];
+    }
+
+    export interface UpdateDataBindingValueRequest {
+      path: string;
+      newValue: string;
+    }
+
+    export interface ImportDataBindingModelsRequest {
+      modelsJSON: any;
+    }
+
     /**
      * Fired when `Element`'s attribute is modified.
      */

@@ -1503,6 +1503,30 @@ export class DOMModel extends SDKModel<EventTypes> {
     return response;
   }
 
+  async getDataBindingModels(verbose?: boolean, modelName?: string): Promise<Protocol.DOM.GetDataBindingModelsResponse|null> {
+    const response = await this.agent.invoke_getDataBindingModels({verbose, modelName});
+    if (response.getError()) {
+      return null;
+    }
+    return response;
+  }
+
+  async getDataBindingModelNames(): Promise<Protocol.DOM.GetDataBindingModelNamesResponse|null> {
+    const response = await this.agent.invoke_getDataBindingModelNames();
+    if (response.getError()) {
+      return null;
+    }
+    return response;
+  }
+
+  updateDataBindingValue(path: string, newValue: string): Promise<Protocol.ProtocolResponseWithError> {
+    return this.agent.invoke_updateDataBindingValue({path, newValue});
+  }
+
+  importDataBindingModels(modelsJSON: string): Promise<Protocol.ProtocolResponseWithError> {
+    return this.agent.invoke_importDataBindingModels({modelsJSON});
+  }
+
   pushObjectAsNodeToFrontend(object: RemoteObject): Promise<DOMNode|null> {
     return object.isNode() ? this.pushNodeToFrontend((object.objectId as string)) : Promise.resolve(null);
   }

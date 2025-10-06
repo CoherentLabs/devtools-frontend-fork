@@ -346,3 +346,10 @@
     color: HighlightText;
   }
 }
+
+/* COHERENT_BEGIN */
+.data-bind-expression:hover {
+  color: HighlightText;
+  background-color: Highlight;
+}
+/* COHERENT_END */

@@ -18,6 +18,9 @@ import * as LayoutPaneUtils from './LayoutPaneUtils.js';
 import * as NodeText from './NodeText.js';
 import * as QueryContainer from './QueryContainer.js';
 import * as StylePropertyEditor from './StylePropertyEditor.js';
+/* COHERENT_BEGIN */
+import * as DataBindingProperty from './DataBindingProperty.js';
+/* COHERENT_END */
 
 export {
   AccessibilityTreeNode,
@@ -36,4 +39,7 @@ export {
   NodeText,
   QueryContainer,
   StylePropertyEditor,
+  /* COHERENT_BEGIN */
+  DataBindingProperty,
+  /* COHERENT_END */
 };

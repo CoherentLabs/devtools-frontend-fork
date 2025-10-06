@@ -18,6 +18,7 @@ generate_css("css_files") {
     "nodeText.css",
     "queryContainer.css",
     "stylePropertyEditor.css",
+    "dataBindingProperty.css",
   ]
 }
 
@@ -39,6 +40,7 @@ devtools_module("components") {
     "NodeText.ts",
     "QueryContainer.ts",
     "StylePropertyEditor.ts",
+    "DataBindingProperty.ts",
   ]
 
   deps = [
@@ -52,6 +54,7 @@ devtools_module("components") {
     "../../../ui/components/render_coordinator:bundle",
     "../../../ui/components/survey_link:bundle",
     "../../../ui/components/tree_outline:bundle",
+    "../../../ui/legacy/components/object_ui:bundle",
     "../../../ui/legacy:bundle",
     "../../../ui/lit-html:bundle",
   ]

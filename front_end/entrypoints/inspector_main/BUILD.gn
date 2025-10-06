@@ -11,6 +11,7 @@ devtools_module("inspector_main") {
     "InspectorMain.ts",
     "RenderingOptions.ts",
     "CohtmlPanel.ts",
+    "DataBindingModelsPanel.ts",
   ]
 
   deps = [
@@ -23,6 +24,7 @@ devtools_module("inspector_main") {
     "../../panels/mobile_throttling:bundle",
     "../../ui/legacy:bundle",
     "../../ui/legacy/components/utils:bundle",
+    "../../ui/legacy/components/object_ui:bundle",
   ]
 }
 

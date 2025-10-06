@@ -100,6 +100,9 @@ Elements.StylePropertyTreeElement = ElementsModule.StylePropertyTreeElement.Styl
 Elements.StylesSidebarPane = ElementsModule.StylesSidebarPane.StylesSidebarPane;
 
 /** @constructor */
+Elements.DataBindingSidebarPane = ElementsModule.DataBindingSidebarPane.DataBindingSidebarPane;
+
+/** @constructor */
 Elements.StylesSidebarPane.CSSPropertyPrompt = ElementsModule.StylesSidebarPane.CSSPropertyPrompt;
 
 /** @constructor */

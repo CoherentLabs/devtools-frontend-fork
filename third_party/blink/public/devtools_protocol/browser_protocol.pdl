@@ -2052,6 +2052,7 @@ domain DOM
     properties
       string evaluatableExpression
       string evaluatedValue
+      string valueType
       boolean syncStatus
       optional string evaluationError
 # COHERENT_END

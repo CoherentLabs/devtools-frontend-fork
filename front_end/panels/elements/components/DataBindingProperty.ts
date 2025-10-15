@@ -33,8 +33,12 @@ export class DataBindBaseTreeElement extends UI.TreeOutline.TreeElement {
   }
 
   async evalExpression(expr: string | undefined) {
-    if (!this.executionContext || !expr) return null;
-    return await this.executionContext?.evaluate({ expression: expr, returnByValue: true }, false, true);
+    if (!expr) return null;
+    const executionContext = UI.Context.Context.instance().flavor(SDK.RuntimeModel.ExecutionContext);
+    if (!executionContext) {
+      return null;
+    }
+    return await executionContext?.evaluate({ expression: expr, returnByValue: true }, false, true);
   }
 
   createExclamationMark(tooltip: string): UI.UIUtils.DevToolsIconLabel {
@@ -217,29 +221,31 @@ export class DataBindAttributeTreeElement extends DataBindBaseTreeElement {
     return outOfSync;
   }
 
+  async checkNodesStatus() {
+    // If we have just a single node then the expression is not complex and we can properly update its status with runtime evaluate
+    if (this.dataBindNodeElements.length === 1) {
+      this.updateNodeStatus(this.dataBindNodeElements[0]);
+      return;
+    }
+
+    // If we have more than one node then the first node is the whole complex expression. Then the status of this node is set based on that if all the
+    // other nodes are synchronized or not. If one node is out of sync then the whole expression if out of sync
+    let hasNonSyncStatus = false;
+
+    for (let [index, node] of this.dataBindNodeElements.entries()) {
+      if (index === 0) continue;
+
+      if (await this.updateNodeStatus(node)) hasNonSyncStatus = true;
+    }
+
+    this.dataBindNodeElements[0].dataBindNodeInfoTree.updateStatus(!hasNonSyncStatus);
+    this.dataBindNodeElements[0].toggleExclamationMark(hasNonSyncStatus);
+  }
+
   startTimers() {
     if (this.statusInterval) return;
 
-    this.statusInterval = setInterval(async () => {
-      // If we have just a single node then the expression is not complex and we can properly update its status with runtime evaluate
-      if (this.dataBindNodeElements.length === 1) {
-        this.updateNodeStatus(this.dataBindNodeElements[0]);
-        return;
-      }
-
-      // If we have more than one node then the first node is the whole complex expression. Then the status of this node is set based on that if all the
-      // other nodes are synchronized or not. If one node is out of sync then the whole expression if out of sync
-      let hasNonSyncStatus = false;
-
-      for (let [index, node] of this.dataBindNodeElements.entries()) {
-        if (index === 0) continue;
-
-        if (await this.updateNodeStatus(node)) hasNonSyncStatus = true;
-      }
-
-      this.dataBindNodeElements[0].dataBindNodeInfoTree.updateStatus(!hasNonSyncStatus);
-      this.dataBindNodeElements[0].toggleExclamationMark(hasNonSyncStatus);
-    }, EVALUATION_NODE_STATUS_WATCH_INTERVAL)
+    this.statusInterval = setInterval(this.checkNodesStatus.bind(this), EVALUATION_NODE_STATUS_WATCH_INTERVAL)
   }
 
   public resetTimers() {
@@ -327,5 +333,6 @@ export class DataBindAttributeTreeElement extends DataBindBaseTreeElement {
 
     this.updateMutators(attributeData);
     this.attributeData = attributeData;
+    this.checkNodesStatus();
   }
 }

@@ -2906,6 +2906,7 @@ declare namespace Protocol {
     export interface DataBindNode {
       evaluatableExpression: string;
       evaluatedValue: string;
+      valueType: string;
       syncStatus: boolean;
       evaluationError?: string;
     }

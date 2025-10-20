@@ -4388,6 +4388,10 @@
                             "type": "string"
                         },
                         {
+                            "name": "valueType",
+                            "type": "string"
+                        },
+                        {
                             "name": "syncStatus",
                             "type": "boolean"
                         },

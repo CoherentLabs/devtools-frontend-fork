@@ -212,6 +212,12 @@ UI.ViewManager.registerViewExtension({
 });
 
 /* COHERENT_BEGIN */
+Common.Settings.registerSettingExtension({
+  settingName: 'highlightBindingAttributes',
+  settingType: Common.Settings.SettingType.BOOLEAN,
+  defaultValue: false,
+});
+
 UI.ViewManager.registerViewExtension({
   location: UI.ViewManager.ViewLocationValues.ELEMENTS_SIDEBAR,
   id: 'elements.data-binding-sidebar',

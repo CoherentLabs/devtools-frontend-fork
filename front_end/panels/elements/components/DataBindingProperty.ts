@@ -16,20 +16,14 @@ const str_ = i18n.i18n.registerUIStrings('panels/accessibility/AccessibilityNode
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 
 export class DataBindBaseTreeElement extends UI.TreeOutline.TreeElement {
-  private warningMark: UI.UIUtils.DevToolsIconLabel;
-  public executionContext: SDK.RuntimeModel.ExecutionContext | undefined
-  constructor(executionContext?: SDK.RuntimeModel.ExecutionContext | undefined) {
+  private mark: UI.UIUtils.DevToolsIconLabel;
+  constructor() {
     super('');
     this.selectable = false;
     this.setExpandable(true);
-    this.executionContext = executionContext;
-    this.setDisableSelectFocus(true);
-    this.warningMark = this.createExclamationMark('');
-    this.listItemElement.insertBefore(this.warningMark, this.listItemElement.firstChild);
-  }
-
-  setWarningMarkTip(tip: string) {
-    this.warningMark.title = tip;
+    this.setDisableSelectFocus(true)
+    this.mark = this.createMark('');
+    this.listItemElement.insertBefore(this.mark, this.listItemElement.firstChild);
   }
 
   async evalExpression(expr: string | undefined) {
@@ -41,16 +35,19 @@ export class DataBindBaseTreeElement extends UI.TreeOutline.TreeElement {
     return await executionContext?.evaluate({ expression: expr, returnByValue: true }, false, true);
   }
 
-  createExclamationMark(tooltip: string): UI.UIUtils.DevToolsIconLabel {
-    const exclamationElement = document.createElement('span', { is: 'dt-icon-label' }) as UI.UIUtils.DevToolsIconLabel;
-    exclamationElement.type = 'smallicon-warning';
-    exclamationElement.className = 'hidden';
-    UI.Tooltip.Tooltip.install(exclamationElement, tooltip);
-    return exclamationElement;
+  createMark(tooltip: string): UI.UIUtils.DevToolsIconLabel {
+    const markElement = document.createElement('span', { is: 'dt-icon-label' }) as UI.UIUtils.DevToolsIconLabel;
+    markElement.type = '';
+    markElement.className = 'hidden';
+    UI.Tooltip.Tooltip.install(markElement, tooltip);
+    return markElement;
   }
 
-  toggleExclamationMark(visible: boolean) {
-    this.warningMark?.classList.toggle('hidden', !visible);
+  toggleMark(visible: boolean, type = 'error', tip = '') {
+    const newType = `smallicon-${type}`;
+    this.mark.type = this.mark.type !== newType ? newType : this.mark.type;
+    this.mark.title = tip;
+    this.mark?.classList.toggle('hidden', !visible);
   }
 
   appendSpanElement(parent: Element, textContent: string, className?: string): HTMLSpanElement {
@@ -136,20 +133,24 @@ export class DataBindNodeTreeElement extends DataBindBaseTreeElement {
   public value?: string;
   public valueType?: string;
   public dataBindNodeInfoTree: DataBindNodeInfoTreeElement;
-  constructor(expression: string, value: string, valueType: string, evaluationError: string | undefined, syncStatus: boolean, executionContext?: SDK.RuntimeModel.ExecutionContext | undefined) {
-    super(executionContext);
+  constructor(expression: string, value: string, valueType: string, evaluationError: string | undefined, syncStatus: boolean) {
+    super();
 
     this.listItemElement.classList.add('monospace');
     this.listItemElement.classList.add('expressions-list');
     this.dataBindNodeInfoTree = new DataBindNodeInfoTreeElement(evaluationError, syncStatus);
 
-    this.setWarningMarkTip('Warnings generated while evaluating the expression');
     this.createElements();
     this.update(expression, value, valueType, evaluationError, syncStatus);
   }
 
   update(expression: string, value: string, valueType: string, evaluationError: string | undefined, syncStatus: boolean) {
-    this.toggleExclamationMark(!!evaluationError || !syncStatus);
+    if (!!evaluationError) {
+      this.toggleMark(true, 'error', 'Errors generated while evaluating the expression');
+    } else if (!syncStatus) {
+      this.toggleMark(true, 'warning', 'Warnings generated while evaluating the expression');
+    } else this.toggleMark(false);
+
     if (expression !== this.expression) this.expressionElement!.textContent = expression;
     if (value !== this.value) {
       this.valueElement!.textContent = value;
@@ -185,11 +186,10 @@ export class DataBindAttributeTreeElement extends DataBindBaseTreeElement {
   private dataBindNodeElements: DataBindNodeTreeElement[] = []
   private statusInterval: any;
 
-  constructor(attributeData: Protocol.DOM.DataBindAttributeData, executionContext: SDK.RuntimeModel.ExecutionContext | undefined) {
-    super(executionContext);
+  constructor(attributeData: Protocol.DOM.DataBindAttributeData) {
+    super();
 
     this.listItemElement.classList.add('bind-attribute');
-    this.setWarningMarkTip('Warnings generated while parsing the attribute');
     this.attributeNameElement = this.appendSpanElement(this.listItemElement, '', 'object-value-string name');
     this.appendSeparatorElement(this.listItemElement);
     this.attributeValueElement = this.appendSpanElement(this.listItemElement, '', 'object-value-string');
@@ -216,7 +216,11 @@ export class DataBindAttributeTreeElement extends DataBindBaseTreeElement {
     //@ts-ignore
     const outOfSync = exprValue?.object?.value as unknown !== currentValue;
     node.dataBindNodeInfoTree.updateStatus(!outOfSync);
-    node.toggleExclamationMark(outOfSync);
+    if (!!node?.dataBindNodeInfoTree?.evaluationError) {
+      node?.toggleMark(true, 'error', 'Errors generated while parsing the attribute');
+    } else if (outOfSync) {
+      node?.toggleMark(true, 'warning', 'Warnings generated while parsing the attribute');
+    } else node?.toggleMark(false);
 
     return outOfSync;
   }
@@ -238,8 +242,14 @@ export class DataBindAttributeTreeElement extends DataBindBaseTreeElement {
       if (await this.updateNodeStatus(node)) hasNonSyncStatus = true;
     }
 
-    this.dataBindNodeElements[0].dataBindNodeInfoTree.updateStatus(!hasNonSyncStatus);
-    this.dataBindNodeElements[0].toggleExclamationMark(hasNonSyncStatus);
+    const rootElement = this.dataBindNodeElements[0];
+    rootElement?.dataBindNodeInfoTree?.updateStatus(!hasNonSyncStatus);
+
+    if (!!rootElement?.dataBindNodeInfoTree?.evaluationError) {
+      rootElement?.toggleMark(true, 'error', 'Errors generated while parsing the attribute');
+    } else if (hasNonSyncStatus) {
+      rootElement?.toggleMark(true, 'warning', 'Warnings generated while parsing the attribute');
+    } else rootElement?.toggleMark(false);
   }
 
   startTimers() {
@@ -275,7 +285,8 @@ export class DataBindAttributeTreeElement extends DataBindBaseTreeElement {
 
   private updateMutators(attributeData: Protocol.DOM.DataBindAttributeData) {
     const mutatorsErrors = [] as string[];
-    let nodeHasProblem = false;
+    let nodeHasError = false;
+    let nodeHasWarning = false;
 
     for (const mutator of attributeData.mutators) {
       if (mutator.parsingError) {
@@ -291,10 +302,11 @@ export class DataBindAttributeTreeElement extends DataBindBaseTreeElement {
 
       for (let i = 0; i < evalNodes.length; i++) {
         const { evaluatableExpression, evaluatedValue, evaluationError, syncStatus, valueType } = evalNodes[i];
-        if (!!evaluationError || !syncStatus) nodeHasProblem = true;
+        if (!!evaluationError) nodeHasError = true;
+        if (!syncStatus) nodeHasWarning = true;
 
         if (!this.dataBindNodeElements[i]) {
-          const node = new DataBindNodeTreeElement(evaluatableExpression, evaluatedValue, valueType, evaluationError, syncStatus, this.executionContext);
+          const node = new DataBindNodeTreeElement(evaluatableExpression, evaluatedValue, valueType, evaluationError, syncStatus);
           this.appendChild(node);
           this.dataBindNodeElements[i] = node;
           continue;
@@ -312,7 +324,12 @@ export class DataBindAttributeTreeElement extends DataBindBaseTreeElement {
       }
     }
 
-    this.toggleExclamationMark(mutatorsErrors.length > 0 || nodeHasProblem);
+    if (nodeHasWarning) {
+      this.toggleMark(true, 'warning', 'Warnings generated while parsing the attribute');
+    } else if (nodeHasError || mutatorsErrors.length > 0) {
+      this.toggleMark(true, 'error', 'Errors generated while parsing the attribute');
+    }
+
     this.errorsContainerElement.classList.toggle('hidden', mutatorsErrors.length === 0);
     this.errorsContainerElement.innerHTML = '';
     if (mutatorsErrors.length > 0) {
@@ -321,7 +338,7 @@ export class DataBindAttributeTreeElement extends DataBindBaseTreeElement {
   }
 
   update(attributeData: Protocol.DOM.DataBindAttributeData) {
-    this.toggleExclamationMark(false);
+    this.toggleMark(false);
 
     if (attributeData.attributeName !== this.attributeData?.attributeName) {
       this.attributeNameElement.textContent = attributeData.attributeName;

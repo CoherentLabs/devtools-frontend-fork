@@ -4,6 +4,24 @@
 
 .bind-tree {
     margin-top: 3px;
+    --override-error-text-color: var(--color-error-text);
+    --override-console-error-background-color: var(--color-error-background);
+    --override-error-border-color: var(--color-error-border);
+    --override-message-border-color: rgb(240 240 240);
+    --override-warning-border-color: hsl(50deg 100% 88%);
+    --override-focused-message-border-color: hsl(214deg 67% 88%);
+    --override-focused-message-background-color: hsl(214deg 48% 95%);
+    --override-console-warning-background-color: hsl(50deg 100% 95%);
+    --override-console-warning-text-color: hsl(39deg 100% 18%);
+}
+
+:host-context(.-theme-with-dark-background) .bind-tree {
+    --override-message-border-color: rgb(58 58 58);
+    --override-warning-border-color: rgb(102 85 0);
+    --override-focused-message-border-color: hsl(214deg 47% 48%);
+    --override-focused-message-background-color: hsl(214deg 19% 20%);
+    --override-console-warning-background-color: hsl(50deg 100% 10%);
+    --override-console-warning-text-color: hsl(39deg 89% 55%);
 }
 
 .data-binding-panel-base {
@@ -30,6 +48,10 @@
     background-color: var(--color-background-elevation-1);
     z-index: 2;
     padding: 0;
+}
+
+.toolbar.second {
+    top: 27px;
 }
 
 .gray-info-message {

@@ -15,7 +15,9 @@ const UIStrings = {
   noAttributes: 'No data bind attributes for the selected node',
   fetchDataWarning: 'Unable to fetch data for the selected node',
   expandAllExpressions: 'Expand all the expressions in the tab',
-  collapseAllExpressions: 'Collapse all the expressions in the tab'
+  collapseAllExpressions: 'Collapse all the expressions in the tab',
+  highlightAttibutesSetting: 'Hover bind attributes',
+  highlightAttibutesSettingDescription: 'Show an informative popover when data-bind attribute is hovered in the elements tab and the option is enabled.'
 };
 const str_ = i18n.i18n.registerUIStrings('panels/elements/DataBindingSidebarPane.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
@@ -30,7 +32,6 @@ export class DataBindingSidebarPane extends ElementsSidebarPane {
   private readonly fetchDataWarning: Element;
   private activeWarningMessage: Element | null = null;
   private filterRegex: RegExp | null = null;
-  private toolbar: UI.Toolbar.Toolbar | null = null;
 
   constructor() {
     super(true);
@@ -70,23 +71,33 @@ export class DataBindingSidebarPane extends ElementsSidebarPane {
   }
 
   createToolbar() {
-    this.toolbar = new UI.Toolbar.Toolbar('', this.contentElement);
-    this.toolbar._shadowRoot.adoptedStyleSheets = [...this.toolbar._shadowRoot.adoptedStyleSheets, dataBindingPanelToolbarStyles];
+    const toolbar = new UI.Toolbar.Toolbar('', this.contentElement);
+    toolbar._shadowRoot.adoptedStyleSheets = [...toolbar._shadowRoot.adoptedStyleSheets, dataBindingPanelToolbarStyles];
 
     const filterInput = this.createFilterElement(this.onFilterChange.bind(this));
-    this.toolbar?.appendToolbarItem(filterInput);
+    toolbar?.appendToolbarItem(filterInput);
 
     const expandIcon = this.createArrowIcon('expand-tree-icon');
     const expandAllBtn =
       new UI.Toolbar.ToolbarButton(i18nString(UIStrings.expandAllExpressions), expandIcon);
     expandAllBtn.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, this.expandTree.bind(this), this);
-    this.toolbar?.appendToolbarItem(expandAllBtn);
+    toolbar?.appendToolbarItem(expandAllBtn);
 
     const collapseIcon = this.createArrowIcon('collapse-tree-icon');
     const collapseAllBtn =
       new UI.Toolbar.ToolbarButton(i18nString(UIStrings.collapseAllExpressions), collapseIcon);
     collapseAllBtn.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, this.collapseTree.bind(this), this);
-    this.toolbar?.appendToolbarItem(collapseAllBtn);
+    toolbar?.appendToolbarItem(collapseAllBtn);
+
+    const secondToolbar = new UI.Toolbar.Toolbar('second', this.contentElement);
+    secondToolbar._shadowRoot.adoptedStyleSheets = [...secondToolbar._shadowRoot.adoptedStyleSheets, dataBindingPanelToolbarStyles];
+
+    const highlightBindingAttributesSetting =
+      Common.Settings.Settings.instance().moduleSetting('highlightBindingAttributes');
+    highlightBindingAttributesSetting.setTitle(i18nString(UIStrings.highlightAttibutesSetting))
+    const highlightBindingAttributesBtn =
+      new UI.Toolbar.ToolbarSettingCheckbox(highlightBindingAttributesSetting, i18nString(UIStrings.highlightAttibutesSettingDescription));
+    secondToolbar?.appendToolbarItem(highlightBindingAttributesBtn);
   }
 
   onFilterChange(value: RegExp | null) {
@@ -159,15 +170,13 @@ export class DataBindingSidebarPane extends ElementsSidebarPane {
     return exclamationElement;
   }
 
-  populateTree(data: Protocol.DOM.DataBindAttributeData[], domModel: SDK.DOMModel.DOMModel | undefined) {
+  populateTree(data: Protocol.DOM.DataBindAttributeData[]) {
     this.hideMessages();
     this.treeElement.classList.toggle('hidden', false);
-    const runtimeModel = domModel?.runtimeModel();
-    const executionContext = runtimeModel?.executionContexts()[0];
 
     for (let i = 0; i < data.length; i++) {
       if (!this.bindingAttributes[i]) {
-        const attrTree = new ElementsComponents.DataBindingProperty.DataBindAttributeTreeElement(data[i], executionContext);
+        const attrTree = new ElementsComponents.DataBindingProperty.DataBindAttributeTreeElement(data[i]);
         attrTree.setExpandable(true);
         attrTree.selectable = false;
         attrTree.expand();
@@ -222,7 +231,7 @@ export class DataBindingSidebarPane extends ElementsSidebarPane {
     const attributes = data?.dataBindAttributes || [];
     if (!attributes.length) return this.showMessage(this.noAttributesInfo);
 
-    this.populateTree(attributes, domModel);
+    this.populateTree(attributes);
     if (this.filterRegex) this.onFilterChange(this.filterRegex);
   }
 

@@ -353,11 +353,17 @@ export const boundsForTransformedPoints = function(matrix: DOMMatrix, points: nu
 };
 
 export class Size {
-  width: number;
+  _width: number;
   height: number;
   constructor(width: number, height: number) {
-    this.width = width;
+    this._width = width;
     this.height = height;
+  }
+
+  get width() { return this._width }
+
+  set width(value: number) {
+    this.width = value;
   }
 
   clipTo(size?: Size|null): Size {

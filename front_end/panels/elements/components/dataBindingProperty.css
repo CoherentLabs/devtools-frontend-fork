@@ -20,13 +20,14 @@
 }
 
 .status-ok {
-    color: green;
+    color: var(--color-accent-green);
 }
 
 .bind-warning-message,
 .bind-error-message {
     user-select: text;
     cursor: text;
+    padding: 0 4px 0 4px;
 }
 
 .bind-error-message.mutators {
@@ -34,13 +35,13 @@
 }
 
 .bind-error-message {
-    color: rgb(255 0 0);
-    background-color: rgb(255, 240, 240);
+    color: var(--override-error-text-color);
+    background-color: var(--override-console-error-background-color);
 }
 
 .bind-warning-message {
-    color: rgb(92, 60, 0);
-    background-color: rgb(255, 245, 194);
+    color: var(--override-console-warning-text-color);
+    background-color: var(--override-console-warning-background-color);
 }
 
 .expressions-list {

@@ -50,6 +50,7 @@ import { ElementsPanel } from './ElementsPanel.js';
 import { ElementsTreeElement, InitialChildrenLimit } from './ElementsTreeElement.js';
 import { ImagePreviewPopover } from './ImagePreviewPopover.js';
 import type { MarkerDecoratorRegistration } from './MarkerDecorator.js';
+const EPSILON = 1; // pixel tolerance for float rounding
 
 const UIStrings = {
   /**
@@ -212,6 +213,29 @@ export class ElementsTreeOutline extends UI.TreeOutline.TreeOutline {
     return info;
   }
 
+  getLineRects(element: BindAttributeTargetElement) {
+    const rects = Array.from(element.getClientRects());
+    if (rects.length === 0) return [];
+
+    // Group rects that belong to the same visual line (by top Y)
+    const lines = [];
+    rects.sort((a, b) => a.top - b.top);
+
+    for (const rect of rects) {
+      const last = lines.length ? lines[lines.length - 1] : null;
+      if (last && Math.abs(last.top - rect.top) < EPSILON) {
+        // Merge rects from the same line horizontally
+        last.left = Math.min(last.left, rect.left);
+        last.right = Math.max(last.right, rect.right);
+        last.width = last.right - last.left;
+      } else {
+        lines.push({ x: rect.x, y: rect.y, width: rect.width, height: rect.height, left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom });
+      }
+    }
+
+    return lines;
+  }
+
   _requestPopover(event: MouseEvent): PopoverRequest | null {
     const hightlightBindingAttributesSetting = Common.Settings.Settings.instance().moduleSetting('highlightBindingAttributes').get();
     if (!hightlightBindingAttributesSetting) return null;
@@ -226,8 +250,18 @@ export class ElementsTreeOutline extends UI.TreeOutline.TreeOutline {
       return null;
     }
 
+    const attributeElementRects = this.getLineRects(targetEl);
+    const activeRect = attributeElementRects.find(rect =>
+      event.clientY >= rect.top - EPSILON &&
+      event.clientY <= rect.bottom + EPSILON &&
+      event.clientX >= rect.left - EPSILON &&
+      event.clientX <= rect.right + EPSILON
+    );
+    const targetElBB = targetEl.boxInWindow();
+    const attributeBB = new AnchorBox(activeRect?.x || targetElBB.x, activeRect?.y || targetElBB.y, activeRect?.width || targetElBB.width, activeRect?.height || targetElBB.height);
+
     return {
-      box: targetEl.boxInWindow(),
+      box: attributeBB,
       show: async (popover: UI.GlassPane.GlassPane) => {
         if (popover._maxSize) popover._maxSize.width = 500;
         if (popover._maxSize) popover._maxSize.height = 500;

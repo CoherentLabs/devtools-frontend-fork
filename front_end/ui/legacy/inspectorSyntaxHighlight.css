@@ -354,6 +354,6 @@
 
 /* COHERENT_BEGIN */
 .data-bind-expression:hover {
-  background-color: var(--item-hover-color);
+  background-color: var(--bind-attribute-hover-color);
 }
 /* COHERENT_END */

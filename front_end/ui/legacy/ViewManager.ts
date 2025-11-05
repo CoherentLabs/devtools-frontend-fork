@@ -92,6 +92,15 @@ export class PreRegisteredView implements View {
     return [];
   }
 
+  async toolbarWrappable(): Promise<boolean> {
+    if (this._viewRegistration.hasToolbar) {
+      // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return this.widget().then(widget => (widget as any).toolbarWrappable?.());
+    }
+    return false;
+  }
+
   async widget(): Promise<Widget> {
     this._widgetRequested = true;
     return this._viewRegistration.loadView();
@@ -182,7 +191,7 @@ export class ViewManager {
     viewManagerInstance = undefined;
   }
 
-  static _createToolbar(toolbarItems: ToolbarItem[]): Element|null {
+  static _createToolbar(toolbarItems: ToolbarItem[]): Toolbar | null {
     if (!toolbarItems.length) {
       return null;
     }
@@ -190,7 +199,7 @@ export class ViewManager {
     for (const item of toolbarItems) {
       toolbar.appendToolbarItem(item);
     }
-    return toolbar.element;
+    return toolbar;
   }
 
   locationNameForViewId(viewId: string): string {
@@ -362,12 +371,17 @@ export class ContainerWidget extends VBox {
       return this._materializePromise;
     }
     const promises = [];
+    let toolbarComponent: Toolbar | null = null;
     // TODO(crbug.com/1006759): Transform to async-await
     promises.push(this._view.toolbarItems().then(toolbarItems => {
-      const toolbarElement = ViewManager._createToolbar(toolbarItems);
-      if (toolbarElement) {
-        this.element.insertBefore(toolbarElement, this.element.firstChild);
+      const toolbar = ViewManager._createToolbar(toolbarItems);
+      if (toolbar) {
+        this.element.insertBefore(toolbar.element, this.element.firstChild);
+        toolbarComponent = toolbar;
       }
+    }));
+    promises.push(this._view.toolbarWrappable?.().then(toobarWrappable => {
+      if(toolbarComponent) toolbarComponent.makeWrappable(toobarWrappable);
     }));
     promises.push(this._view.widget().then(widget => {
       // Move focus from |this| to loaded |widget| if any.
@@ -449,11 +463,17 @@ export class _ExpandableContainerWidget extends VBox {
     }
     // TODO(crbug.com/1006759): Transform to async-await
     const promises = [];
+    let toolbarComponent: Toolbar | null = null;
+    // TODO(crbug.com/1006759): Transform to async-await
     promises.push(this._view.toolbarItems().then(toolbarItems => {
-      const toolbarElement = ViewManager._createToolbar(toolbarItems);
-      if (toolbarElement) {
-        this._titleElement.appendChild(toolbarElement);
+      const toolbar = ViewManager._createToolbar(toolbarItems);
+      if (toolbar) {
+        this._titleElement.appendChild(toolbar.element);
+        toolbarComponent = toolbar;
       }
+    }));
+    promises.push(this._view.toolbarWrappable?.().then(toobarWrappable => {
+      if (toolbarComponent) toolbarComponent.makeWrappable(toobarWrappable);
     }));
     promises.push(this._view.widget().then(widget => {
       this._widget = widget;

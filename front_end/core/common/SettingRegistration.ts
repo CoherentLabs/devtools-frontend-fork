@@ -185,6 +185,7 @@ export enum SettingType {
   REGEX = 'regex',
   ENUM = 'enum',
   BOOLEAN = 'boolean',
+  NUMBER = 'number'
 }
 
 export interface RegExpSettingItem {

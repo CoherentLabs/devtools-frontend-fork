@@ -1,0 +1,11 @@
+.update-models-interval-label {
+    margin-left: 4px;
+}
+
+.update-models-interval-input {
+    border: 1px solid var(--color-details-hairline);
+    width: 70px;
+    background: var(--color-background);
+    padding-left: 4px;
+    margin: 3px;
+}

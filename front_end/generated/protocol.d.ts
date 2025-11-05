@@ -3839,9 +3839,7 @@ declare namespace Protocol {
       modelName?: string;
     }
 
-    export interface GetDataBindingModelsResponse extends ProtocolResponseWithError {
-      models: any;
-    }
+    export interface GetDataBindingModelsResponse extends ProtocolResponseWithError { }
 
     export interface GetDataBindingModelNamesResponse extends ProtocolResponseWithError {
       models: string[];

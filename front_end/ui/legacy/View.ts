@@ -20,6 +20,8 @@ export interface View {
 
   toolbarItems(): Promise<ToolbarItem[]>;
 
+  toolbarWrappable?(): Promise<boolean>;
+
   widget(): Promise<Widget>;
 
   disposeView(): void|Promise<void>;

@@ -184,6 +184,12 @@ Common.Settings.registerSettingExtension({
   defaultValue: false,
 });
 
+Common.Settings.registerSettingExtension({
+  settingName: 'autoUpdateBindModelsInterval',
+  settingType: Common.Settings.SettingType.NUMBER,
+  defaultValue: 2000,
+});
+
 UI.ViewManager.registerViewExtension({
   location: UI.ViewManager.ViewLocationValues.DRAWER_VIEW,
   id: 'cohtml',

@@ -17,6 +17,7 @@ devtools_module("object_ui") {
     "JavaScriptAutocomplete.ts",
     "JavaScriptREPL.ts",
     "ObjectPopoverHelper.ts",
+    "BindObjectPropertiesSection.ts",
     "ObjectPropertiesSection.ts",
     "RemoteObjectPreviewFormatter.ts",
   ]

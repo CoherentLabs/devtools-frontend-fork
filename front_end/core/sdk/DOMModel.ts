@@ -1523,7 +1523,7 @@ export class DOMModel extends SDKModel<EventTypes> {
     return this.agent.invoke_updateDataBindingValue({path, newValue});
   }
 
-  importDataBindingModels(modelsJSON: string): Promise<Protocol.ProtocolResponseWithError> {
+  importDataBindingModels(modelsJSON: object): Promise<Protocol.ProtocolResponseWithError> {
     return this.agent.invoke_importDataBindingModels({modelsJSON});
   }
 

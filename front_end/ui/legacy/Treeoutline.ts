@@ -1033,6 +1033,8 @@ export class TreeElement {
 
       if (depth < maxDepth) {
         item.expand();
+      } else {
+        break;
       }
 
       item = item.traverseNextTreeElement(false, this, (depth >= maxDepth), info);

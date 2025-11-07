@@ -45,7 +45,9 @@ import { JavaScriptREPL } from './JavaScriptREPL.js';
 import { createSpansForNodeTitle, RemoteObjectPreviewFormatter } from './RemoteObjectPreviewFormatter.js';
 import { updateBindModel } from '../utils/DataBindingUtils.js';
 
+// COHERENT_BEGIN
 const MAX_DEPTH = 10;
+// COHERENT_END
 
 const UIStrings = {
   /**
@@ -121,7 +123,9 @@ const UIStrings = {
   */
   copy: 'Copy',
 };
+// COHERENT_BEGIN
 const str_ = i18n.i18n.registerUIStrings('ui/legacy/components/object_ui/BindObjectPropertiesSection.ts', UIStrings);
+// COHERENT_END
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 const EXPANDABLE_MAX_LENGTH = 50;
 
@@ -132,20 +136,27 @@ const objectPropertiesSectionMap = new WeakMap<Element, BindObjectPropertiesSect
 export const getObjectPropertiesSectionFrom = (element: Element): BindObjectPropertiesSection | undefined => {
   return objectPropertiesSectionMap.get(element);
 };
-
+// COHERENT_BEGIN
 export class BindObjectPropertiesSection extends UI.TreeOutline.TreeOutlineInShadow {
+  // COHERENT_END
   private readonly object: SDK.RemoteObject.RemoteObject;
-  modelName: string
+  // COHERENT_BEGIN
+  modelName: string;
+  // COHERENT_END
   editable: boolean;
   private readonly objectTreeElementInternal: RootElement;
   titleElement: Element;
   skipProtoInternal?: boolean;
   constructor(
+    // COHERENT_BEGIN
     modelName: string,
     object: SDK.RemoteObject.RemoteObject, title?: string | Element | null, linkifier?: Components.Linkifier.Linkifier,
     showOverflow?: boolean) {
+    // COHERENT_END
     super();
+    // COHERENT_BEGIN
     this.modelName = modelName;
+    // COHERENT_END
     this.object = object;
     this.editable = true;
     if (!showOverflow) {
@@ -173,11 +184,15 @@ export class BindObjectPropertiesSection extends UI.TreeOutline.TreeOutlineInSha
   }
 
   static defaultObjectPresentation(
+    // COHERENT_BEGIN
     modelName: string,
+    // COHERENT_END
     object: SDK.RemoteObject.RemoteObject, linkifier?: Components.Linkifier.Linkifier, skipProto?: boolean,
     readOnly?: boolean): Element {
     const objectPropertiesSection =
+      // COHERENT_BEGIN
       BindObjectPropertiesSection.defaultObjectPropertiesSection(modelName, object, linkifier, skipProto, readOnly);
+    // COHERENT_END
     if (!object.hasChildren) {
       return objectPropertiesSection.titleElement;
     }
@@ -185,9 +200,13 @@ export class BindObjectPropertiesSection extends UI.TreeOutline.TreeOutlineInSha
   }
 
   static defaultObjectPropertiesSection(
+    // COHERENT_BEGIN
     modelName: string,
+    // COHERENT_END
     object: SDK.RemoteObject.RemoteObject, linkifier?: Components.Linkifier.Linkifier, skipProto?: boolean,
+    // COHERENT_BEGIN
     readOnly?: boolean): BindObjectPropertiesSection {
+    // COHERENT_END
     const titleElement = document.createElement('span');
     titleElement.classList.add('source-code');
     const shadowRoot = UI.Utils.createShadowRootWithCoreStyles(titleElement, {
@@ -195,9 +214,13 @@ export class BindObjectPropertiesSection extends UI.TreeOutline.TreeOutlineInSha
       delegatesFocus: undefined,
     });
     const propertyValue =
+    // COHERENT_BEGIN
       BindObjectPropertiesSection.createPropertyValue(object, /* wasThrown */ false, /* showPreview */ true);
+    // COHERENT_END
     shadowRoot.appendChild(propertyValue.element);
+    // COHERENT_BEGIN
     const objectPropertiesSection = new BindObjectPropertiesSection(modelName, object, titleElement, linkifier);
+    // COHERENT_END
     objectPropertiesSection.editable = false;
     if (skipProto) {
       objectPropertiesSection.skipProto();
@@ -261,6 +284,7 @@ export class BindObjectPropertiesSection extends UI.TreeOutline.TreeOutlineInSha
     return UI.Fragment.html`<span class="name">${name}</span>`;
   }
 
+  // COHERENT_BEGIN
   static updateNameElement(element: Element, name: string | null) {
     if (name === null) {
       element.textContent = '';
@@ -273,6 +297,7 @@ export class BindObjectPropertiesSection extends UI.TreeOutline.TreeOutlineInSha
 
     element.textContent = name;
   }
+  // COHERENT_END
 
   static valueElementForFunctionDescription(description?: string | null, includePreview?: boolean, defaultName?: string):
     Element {
@@ -364,7 +389,9 @@ export class BindObjectPropertiesSection extends UI.TreeOutline.TreeOutlineInSha
       result.classList.add('object-properties-section-custom-section');
       return new ObjectPropertyValue(result);
     }
+    // COHERENT_BEGIN
     return BindObjectPropertiesSection.createPropertyValue(value, wasThrown, showPreview, parentElement, linkifier);
+    // COHERENT_END
   }
 
   static appendMemoryIcon(element: Element, obj: SDK.RemoteObject.RemoteObject): void {
@@ -413,7 +440,9 @@ export class BindObjectPropertiesSection extends UI.TreeOutline.TreeOutlineInSha
     } else if (type === 'object' && subtype === 'trustedtype') {
       propertyValue = createTrustedTypeElement();
     } else if (type === 'function') {
+      // COHERENT_BEGIN
       propertyValue = new ObjectPropertyValue(BindObjectPropertiesSection.valueElementForFunctionDescription(description));
+      // COHERENT_END
     } else if (type === 'object' && subtype === 'node' && description) {
       propertyValue = new ObjectPropertyValue(createNodeElement());
     } else {
@@ -431,7 +460,9 @@ export class BindObjectPropertiesSection extends UI.TreeOutline.TreeOutlineInSha
         propertyValue.element.textContent = description;
         UI.Tooltip.Tooltip.install(propertyValue.element as HTMLElement, description);
       }
+      // COHERENT_BEGIN
       // this.appendMemoryIcon(valueElement, value);
+      // COHERENT_END
     }
 
     if (wasThrown) {
@@ -520,7 +551,9 @@ export class BindObjectPropertiesSection extends UI.TreeOutline.TreeOutlineInSha
         defaultName = response.functionName;
       }
       const valueElement =
+        // COHERENT_BEGIN
         BindObjectPropertiesSection.valueElementForFunctionDescription(func.description, includePreview, defaultName);
+      // COHERENT_END
       element.appendChild(valueElement);
     }
   }
@@ -609,7 +642,9 @@ export const enum ObjectPropertiesMode {
 }
 
 export class RootElement extends UI.TreeOutline.TreeElement {
+  // COHERENT_BEGIN
   public modelName: string | null;
+  // COHERENT_END
   private object: SDK.RemoteObject.RemoteObject | undefined;
   private readonly linkifier: Components.Linkifier.Linkifier | undefined;
   private readonly emptyPlaceholder: string | null | undefined;
@@ -618,15 +653,21 @@ export class RootElement extends UI.TreeOutline.TreeElement {
   private readonly targetObject: SDK.RemoteObject.RemoteObject | undefined;
   toggleOnClick: boolean;
   constructor(
+    // COHERENT_BEGIN
     modelName: string | null,
     object?: SDK.RemoteObject.RemoteObject, linkifier?: Components.Linkifier.Linkifier, emptyPlaceholder?: string | null,
+    // COHERENT_END
     propertiesMode: ObjectPropertiesMode = ObjectPropertiesMode.OwnAndInternalAndInherited,
     extraProperties: SDK.RemoteObject.RemoteObjectProperty[] = [],
+    // COHERENT_BEGIN
     targetObject: SDK.RemoteObject.RemoteObject | undefined = object) {
+    // COHERENT_END
     const contentElement = document.createElement('slot');
     super(contentElement);
 
+    // COHERENT_BEGIN
     this.modelName = modelName;
+    // COHERENT_END
     this.object = object;
     this.linkifier = linkifier;
     this.emptyPlaceholder = emptyPlaceholder;
@@ -641,14 +682,13 @@ export class RootElement extends UI.TreeOutline.TreeElement {
     this.listItemElement.addEventListener('contextmenu', this.onContextMenu.bind(this), false);
   }
 
+  // COHERENT_BEGIN
   async update(modelName: string | null, object?: SDK.RemoteObject.RemoteObject) {
     this.modelName = modelName;
     this.object = object;
 
     // Only repopulate if we actually need to
     if (this.expanded) {
-      // const treeOutline = (this.treeOutline as BindObjectPropertiesSection | null);
-      // const skipProto = treeOutline ? Boolean(treeOutline.skipProtoInternal) : false;
       const skipProto = true;
 
       await ObjectPropertyTreeElement.populateInPlace(
@@ -656,6 +696,7 @@ export class RootElement extends UI.TreeOutline.TreeElement {
         this.targetObject);
     }
   }
+  // COHERENT_END
 
   onexpand(): void {
     if (this.treeOutline) {
@@ -675,7 +716,9 @@ export class RootElement extends UI.TreeOutline.TreeElement {
 
   private onContextMenu(event: Event): void {
     const contextMenu = new UI.ContextMenu.ContextMenu(event);
+    // COHERENT_BEGIN
     if (this.object) contextMenu.appendApplicableItems(this.object);
+    // COHERENT_END
 
     if (this.object instanceof SDK.RemoteObject.LocalJSONObject) {
       const { value } = this.object;
@@ -688,19 +731,21 @@ export class RootElement extends UI.TreeOutline.TreeElement {
     }
 
     contextMenu.viewSection().appendItem(
+      // COHERENT_BEGIN
       i18nString(UIStrings.expandRecursively), this.expandRecursively.bind(this, MAX_DEPTH));
+    // COHERENT_END
     contextMenu.viewSection().appendItem(i18nString(UIStrings.collapseChildren), this.collapseChildren.bind(this));
     contextMenu.show();
   }
 
+  // COHERENT_BEGIN
   async onpopulate(): Promise<void> {
-    // const treeOutline = (this.treeOutline as BindObjectPropertiesSection | null);
-    // const skipProto = treeOutline ? Boolean(treeOutline.skipProtoInternal) : false;
     const skipProto = true;
     return ObjectPropertyTreeElement.populate(
       this, this.object, skipProto, this.linkifier, this.emptyPlaceholder, this.propertiesMode, this.extraProperties,
       this.targetObject);
   }
+  // COHERENT_END
 }
 
 // Number of initially visible children in an ObjectPropertyTreeElement.
@@ -734,6 +779,7 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
     this.listItemElement.dataset.objectPropertyNameForTest = property.name;
   }
 
+  // COHERENT_BEGIN
   static async getPropsFromValue(value: SDK.RemoteObject.RemoteObject, propertiesMode: ObjectPropertiesMode = ObjectPropertiesMode.OwnAndInternalAndInherited) {
     let properties, internalProperties = null;
     switch (propertiesMode) {
@@ -831,22 +877,6 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
 
     const allProperties = [...properties, ...internalProperties];
 
-    // treeElement.children().forEach(child => {
-    //   if (child instanceof ObjectPropertyTreeElement) {
-    //     // existingChildren.set(child.property.name, child);
-    //     const propIndex = allProperties.findIndex((prop) => prop.name === child.property.name);
-    //     if (propIndex >= 0) {
-    //       child.property = allProperties[propIndex];
-    //       child.updateInPlace();
-    //     } else {
-    //       treeElement.removeChild(child);
-    //     }
-
-    //     allProperties.splice(propIndex, 1);
-    //   }
-    // });
-
-
     // Find properties to update or add
     for (const property of allProperties) {
       const existingElement = existingChildren.get(property.name);
@@ -889,13 +919,16 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
 
     ObjectPropertyTreeElement.appendEmptyPlaceholderIfNeeded(treeElement, emptyPlaceholder);
   }
+  // COHERENT_END
 
   static populateWithProperties(
     treeNode: UI.TreeOutline.TreeElement, properties: SDK.RemoteObject.RemoteObjectProperty[],
     internalProperties: SDK.RemoteObject.RemoteObjectProperty[] | null, skipProto: boolean,
     value: SDK.RemoteObject.RemoteObject | null, linkifier?: Components.Linkifier.Linkifier,
     emptyPlaceholder?: string | null, skipGettersAndSetters?: boolean): void {
+    // COHERENT_BEGIN
     properties.sort(BindObjectPropertiesSection.compareProperties);
+    // COHERENT_END
     internalProperties = internalProperties || [];
 
     const entriesProperty = internalProperties.find(property => property.name === '[[Entries]]');
@@ -913,7 +946,9 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
       parentMap.set(property, value);
       // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // COHERENT_BEGIN
       if (!BindObjectPropertiesSection.isDisplayableProperty(property, (treeNode as any).property)) {
+      // COHERENT_END
         continue;
       }
 
@@ -963,6 +998,7 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
     ObjectPropertyTreeElement.appendEmptyPlaceholderIfNeeded(treeNode, emptyPlaceholder);
   }
 
+  // COHERENT_BEGIN
   private static appendEmptyPlaceholderIfNeeded(treeNode: UI.TreeOutline.TreeElement, emptyPlaceholder?: string | null):
     void {
     const emptyPlaceholderElement = treeNode.listItemElement.querySelector('.gray-info-message');
@@ -980,6 +1016,7 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
       treeNode.appendChild(infoElement);
     }
   }
+  // COHERENT_END
 
   static createRemoteObjectAccessorPropertySpan(
     object: SDK.RemoteObject.RemoteObject | null, propertyPath: string[],
@@ -1079,9 +1116,8 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
   async onpopulate(): Promise<void> {
     const propertyValue = (this.property.value as SDK.RemoteObject.RemoteObject);
     console.assert(typeof propertyValue !== 'undefined');
-    // const treeOutline = (this.treeOutline as BindObjectPropertiesSection | null);
-    // const skipProto = treeOutline ? Boolean(treeOutline.skipProtoInternal) : false;
-    const skipProto = true;
+    // COHERENT_BEGIN
+      const skipProto = true;
     const targetValue = this.property.name !== '[[Prototype]]' ? propertyValue : parentMap.get(this.property);
     if (targetValue) {
       await ObjectPropertyTreeElement.populate(
@@ -1090,6 +1126,7 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
         this.createShowAllPropertiesButton();
       }
     }
+    // COHERENT_END
   }
 
   ondblclick(event: Event): boolean {
@@ -1152,10 +1189,13 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
     }
     valueElement.classList.add('object-value-' + (value.subtype || value.type));
     UI.Tooltip.Tooltip.install(valueElement, value.description || '');
+    // COHERENT_BEGIN
     // BindObjectPropertiesSection.appendMemoryIcon(valueElement, value);
+    // COHERENT_END
     return valueElement;
   }
 
+  // COHERENT_BEGIN
   private updateExpandedValueElement(value: SDK.RemoteObject.RemoteObject): void {
     if (!this.expandedValueElement) {
       this.expandedValueElement = this.createExpandedValueElement(value);
@@ -1169,7 +1209,6 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
       return;
     }
 
-    // const valueElement = document.createElement('span');
     this.expandedValueElement.classList.add('value');
     if (value.description === 'Object') {
       this.expandedValueElement.textContent = '';
@@ -1178,15 +1217,12 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
     }
     this.expandedValueElement.classList.add('object-value-' + (value.subtype || value.type));
     UI.Tooltip.Tooltip.install(this.expandedValueElement as HTMLElement, value.description || '');
-    // BindObjectPropertiesSection.appendMemoryIcon(this.expandedValueElement, value);
   }
 
   async updateInPlace(): Promise<void> {
     const propertyValue = this.property.value;
     if (!propertyValue) return;
-
-    // if (this.rowContainer) this.updateNameAndValueInPlace();
-    // else this.update();
+  
     this.update();
     this.updateExpandable();
     if (this.expanded) await ObjectPropertyTreeElement.populateInPlace(this, propertyValue, true, this.linkifier);
@@ -1213,23 +1249,19 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
 
     const isInternalEntries = this.property.synthetic && this.property.name === '[[Entries]]';
     if (isInternalEntries) {
-      // this.valueElement = document.createElement('span');
       this.valueElement.classList.add('value');
       this.valueElement.innerHTML = '';
     } else if (this.property.value) {
       const showPreview = this.property.name !== '[[Prototype]]';
       this.propertyValue = BindObjectPropertiesSection.createPropertyValueWithCustomSupport(
         this.property.value, this.property.wasThrown, showPreview, this.listItemElement, this.linkifier);
-      // this.rowContainer.replaceChild(this.propertyValue.element, this.valueElement);
       this.valueElement = (this.propertyValue.element as HTMLElement);
     } else if (this.property.getter) {
       const remoteObjectAccessorSpan = ObjectPropertyTreeElement.createRemoteObjectAccessorPropertySpan(
         (parentMap.get(this.property) as SDK.RemoteObject.RemoteObject), [this.property.name],
         this.onInvokeGetterClick.bind(this));
-      // this.rowContainer.replaceChild(remoteObjectAccessorSpan, this.valueElement);
       this.valueElement = remoteObjectAccessorSpan;
     } else {
-      // this.valueElement = document.createElement('span');
       this.valueElement.classList.add('object-value-undefined');
       this.valueElement.innerHTML = i18nString(UIStrings.unreadable);
       UI.Tooltip.Tooltip.install(this.valueElement, i18nString(UIStrings.noPropertyGetter));
@@ -1238,24 +1270,16 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
     const valueText = this.valueElement.textContent;
     if (this.property.value && valueText && !this.property.wasThrown) {
       this.updateExpandedValueElement(this.property.value);
-      // this.expandedValueElement = this.createExpandedValueElement(this.property.value);
     }
-
-    // this.listItemElement.removeChildren();
-    // let container: Element;
-    // if (isInternalEntries) {
-    //   container = UI.Fragment.html`<span class='name-and-value'>${this.nameElement}</span>`;
-    // } else {
-    //   container = UI.Fragment.html`<span class='name-and-value'>${this.nameElement}: ${this.valueElement}</span>`;
-    // }
-    // this.rowContainer = (container as HTMLElement);
-    // this.listItemElement.appendChild(this.rowContainer);
   }
+  // COHERENT_END
 
   update(): void {
     this.nameElement =
+    // COHERENT_BEGIN
       (BindObjectPropertiesSection.createNameElement(this.property.name, this.property.private) as HTMLElement);
-    if (!this.property.enumerable) {
+    // COHERENT_END
+      if (!this.property.enumerable) {
       this.nameElement.classList.add('object-properties-section-dimmed');
     }
     if (this.property.synthetic) {
@@ -1270,8 +1294,10 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
       this.valueElement.classList.add('value');
     } else if (this.property.value) {
       const showPreview = this.property.name !== '[[Prototype]]';
+      // COHERENT_BEGIN
       this.propertyValue = BindObjectPropertiesSection.createPropertyValueWithCustomSupport(
         this.property.value, this.property.wasThrown, showPreview, this.listItemElement, this.linkifier);
+      // COHERENT_END
       this.valueElement = (this.propertyValue.element as HTMLElement);
     } else if (this.property.getter) {
       this.valueElement = ObjectPropertyTreeElement.createRemoteObjectAccessorPropertySpan(
@@ -1294,7 +1320,9 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
     if (isInternalEntries) {
       container = UI.Fragment.html`<span class='name-and-value'>${this.nameElement}</span>`;
     } else {
+      // COHERENT_BEGIN
       container = UI.Fragment.html`<span class='name-and-value'>${this.nameElement}: ${this.expanded ? this.expandedValueElement : this.valueElement}</span>`;
+      // COHERENT_END
     }
     this.rowContainer = (container as HTMLElement);
     this.listItemElement.appendChild(this.rowContainer);
@@ -1319,7 +1347,9 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
     const parentPath = (this.parent instanceof ObjectPropertyTreeElement && this.parent.nameElement &&
       !this.parent.property.synthetic) ?
       this.parent.nameElement.title :
+      // COHERENT_BEGIN
       (this.parent instanceof RootElement ? this.parent.modelName : '');
+      // COHERENT_END
 
     if (this.property.private || useDotNotation.test(name)) {
       UI.Tooltip.Tooltip.install(this.nameElement, parentPath ? `${parentPath}.${name}` : name);
@@ -1355,7 +1385,9 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
     }
     if (parentMap.get(this.property) instanceof SDK.RemoteObject.LocalJSONObject) {
       contextMenu.viewSection().appendItem(
+        // COHERENT_BEGIN
         i18nString(UIStrings.expandRecursively), this.expandRecursively.bind(this, MAX_DEPTH));
+        // COHERENT_END
       contextMenu.viewSection().appendItem(i18nString(UIStrings.collapseChildren), this.collapseChildren.bind(this));
     }
     if (this.propertyValue) {
@@ -1365,7 +1397,9 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
   }
 
   private startEditing(): void {
+    // COHERENT_BEGIN
     const treeOutline = (this.treeOutline as BindObjectPropertiesSection | null);
+    // COHERENT_END
     if (this.prompt || !treeOutline || !treeOutline.editable || this.readOnly) {
       return;
     }
@@ -1443,6 +1477,7 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
     }
   }
 
+  // COHERENT_BEGIN
   private async updateBindModel() {
     let root = this.parent;
     while (root && !(root instanceof RootElement)) {
@@ -1451,6 +1486,7 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
 
     if (root) await updateBindModel(root.modelName!);
   }
+  // COHERENT_END
 
   private async applyExpression(expression: string): Promise<void> {
     const property = SDK.RemoteObject.RemoteObject.toCallArgument(this.property.symbol || this.property.name);
@@ -1478,7 +1514,9 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
       expression ? parentObject.setPropertyValue(property, expression) : parentObject.deleteProperty(property);
     const error = await errorPromise;
 
+    // COHERENT_BEGIN
     this.updateBindModel();
+    // COHERENT_END
 
     if (error) {
       this.update();
@@ -1712,7 +1750,9 @@ export class ArrayGroupingTreeElement extends UI.TreeOutline.TreeElement {
     if (!properties) {
       return;
     }
+    // COHERENT_BEGIN
     properties.sort(BindObjectPropertiesSection.compareProperties);
+    // COHERENT_END
     for (let i = 0; i < properties.length; ++i) {
       parentMap.set(properties[i], this.object);
       const childTreeElement = new ObjectPropertyTreeElement(properties[i], linkifier);
@@ -1769,12 +1809,16 @@ export class ArrayGroupingTreeElement extends UI.TreeOutline.TreeElement {
       return;
     }
     const properties = allProperties.properties;
+    // COHERENT_BEGIN
     properties.sort(BindObjectPropertiesSection.compareProperties);
+    // COHERENT_END
     for (const property of properties) {
       parentMap.set(property, this.object);
       // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // COHERENT_BEGIN
       if (!BindObjectPropertiesSection.isDisplayableProperty(property, (treeNode as any).property)) {
+      // COHERENT_END
         continue;
       }
       const childTreeElement = new ObjectPropertyTreeElement(property, linkifier);
@@ -1931,7 +1975,9 @@ export class Renderer implements UI.UIUtils.Renderer {
     return rendererInstance;
   }
 
+  // COHERENT_BEGIN
   render(modelName: string, object: Object, options?: UI.UIUtils.Options): Promise<{
+    // COHERENT_END
     node: Node,
     tree: UI.TreeOutline.TreeOutline | null,
   } | null> {
@@ -1940,7 +1986,9 @@ export class Renderer implements UI.UIUtils.Renderer {
     }
     options = options || { title: undefined, editable: undefined };
     const title = options.title;
+    // COHERENT_BEGIN
     const section = new BindObjectPropertiesSection(modelName, object, title);
+    // COHERENT_END
     if (!title) {
       section.titleLessMode();
     }

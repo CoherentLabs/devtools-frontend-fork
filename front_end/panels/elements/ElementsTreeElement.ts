@@ -39,6 +39,7 @@ import * as Host from '../../core/host/host.js';
 import * as i18n from '../../core/i18n/i18n.js';
 import * as Platform from '../../core/platform/platform.js';
 import * as SDK from '../../core/sdk/sdk.js';
+import * as Protocol from '../../generated/protocol.js';
 import * as TextUtils from '../../models/text_utils/text_utils.js';
 import * as Adorners from '../../ui/components/adorners/adorners.js';
 import * as TextEditor from '../../ui/legacy/components/text_editor/text_editor.js';
@@ -233,13 +234,19 @@ export class ElementsTreeElement extends UI.TreeOutline.TreeElement {
   _searchHighlightsVisible?: boolean;
   selectionElement?: HTMLDivElement;
   _hintElement?: HTMLElement;
-  static createExclamationMark(tooltip: string): Element {
-    const exclamationElement = document.createElement('span', { is: 'dt-icon-label' }) as UI.UIUtils.DevToolsIconLabel;
-    exclamationElement.type = 'smallicon-warning';
-    exclamationElement.className = 'exclamation-mark';
-    UI.Tooltip.Tooltip.install(exclamationElement, tooltip);
-    return exclamationElement;
+  /* COHERENT_BEGIN */
+  _gettingBindingData: boolean;
+  _dataBindingData: Protocol.DOM.DataBindAttributeData[] | null;
+  /* COHERENT_END */
+  
+  static createErrorMark(tooltip: string, additionalClasses:string = ''): Element {
+    const errorElement = document.createElement('span', { is: 'dt-icon-label' }) as UI.UIUtils.DevToolsIconLabel;
+    errorElement.type = 'smallicon-error';
+    errorElement.className = 'error-mark' + ' ' + additionalClasses;
+    UI.Tooltip.Tooltip.install(errorElement, tooltip);
+    return errorElement;
   }
+
   constructor(node: SDK.DOMModel.DOMNode, isClosingTag?: boolean) {
     // The title will be updated in onattach.
     super();
@@ -285,6 +292,11 @@ export class ElementsTreeElement extends UI.TreeOutline.TreeElement {
     }
 
     this.expandAllButtonElement = null;
+
+    /* COHERENT_BEGIN */
+    this._gettingBindingData = false;
+    this._dataBindingData = null;
+    /* COHERENT_END */
   }
 
   static animateOnDOMUpdate(treeElement: ElementsTreeElement): void {
@@ -1305,9 +1317,6 @@ export class ElementsTreeElement extends UI.TreeOutline.TreeElement {
       // fixme: make it clear that `this.title = x` is a setter with significant side effects
       this.title = highlightElement;
       this.updateDecorations();
-      if (this.node().attributes().find((attr) => attr.name.startsWith('data-bind'))) {
-        this.listItemElement.insertBefore(ElementsTreeElement.createExclamationMark('Data binding warning'), this.listItemElement.firstChild);
-      }
       this.listItemElement.insertBefore(this._gutterContainer, this.listItemElement.firstChild);
       if (!this._isClosingTag && this._adornerContainer) {
         this.listItemElement.appendChild(this._adornerContainer);
@@ -1461,7 +1470,7 @@ export class ElementsTreeElement extends UI.TreeOutline.TreeElement {
     let highlightCount = 0;
     let additionalHighlightOffset = 0;
 
-    function setValueWithEntities(this: ElementsTreeElement, element: Element, value: string, dataBindAttr = false): void {
+    function setValueWithEntities(this: ElementsTreeElement, element: Element, value: string): void {
       const result = this._convertWhitespaceToEntities(value);
       highlightCount = result.entityRanges.length;
       value = result.text.replace(closingPunctuationRegex, (match, replaceOffset) => {
@@ -1477,40 +1486,8 @@ export class ElementsTreeElement extends UI.TreeOutline.TreeElement {
         result.entityRanges[highlightIndex].offset += additionalHighlightOffset;
         ++highlightIndex;
       }
-      /* COHERENT_BEGIN */
-      if (!dataBindAttr) {
-        element.setTextContentTruncatedIfNeeded(value);
-      } else {
-        const regex = /\{\{([^}]|}(?!}))*\}\}/g;
-        let lastIndex = 0;
-        let match: RegExpExecArray | null;
-        const plainValue = value.replace(/[\u200B-\u200D\uFEFF]/g, '');
-        while ((match = regex.exec(plainValue)) !== null) {
-          // Text before the expression
-          if (match.index > lastIndex) {
-            const textSpan = document.createElement('span');
-            textSpan.textContent = plainValue.slice(lastIndex, match.index);
-            element.appendChild(textSpan);
-          }
+      element.setTextContentTruncatedIfNeeded(value);
 
-          // Expression span
-          const exprSpan = document.createElement('span');
-          exprSpan.classList.add('data-bind-expression');
-          exprSpan.textContent = match[0];
-          element.appendChild(exprSpan);
-
-          lastIndex = match.index + match[0].length;
-        }
-
-        // Remaining text
-        if (lastIndex < plainValue.length) {
-          const remainingSpan = document.createElement('span');
-          remainingSpan.textContent = plainValue.slice(lastIndex);
-          element.appendChild(remainingSpan);
-        }
-        // value.matchAll()
-      }
-      /* COHERENT_END */
       UI.UIUtils.highlightRangesWithStyleClass(element, result.entityRanges, 'webkit-html-entity-value');
     }
 
@@ -1518,6 +1495,19 @@ export class ElementsTreeElement extends UI.TreeOutline.TreeElement {
     const attrSpanElement = (parentElement.createChild('span', 'webkit-html-attribute') as HTMLElement);
     const attrNameElement = attrSpanElement.createChild('span', 'webkit-html-attribute-name');
     attrNameElement.textContent = name;
+
+    /* COHERENT_BEGIN */
+    if (attrNameElement.textContent.startsWith('data-')) {
+      attrSpanElement.insertBefore(ElementsTreeElement.createErrorMark(`Errors generated while parsing the "${name}" attribute.`, 'data-attr-error hidden'), attrNameElement);
+      attrSpanElement.classList.add('data-bind-expression');
+      //@ts-ignore
+      attrSpanElement.domModel = this._node.domModel();
+      //@ts-ignore
+      attrSpanElement.attrName = name;
+      //@ts-ignore
+      attrSpanElement.nodeId = this._node.id;
+    }
+    /* COHERENT_END */
 
     if (hasText) {
       UI.UIUtils.createTextChild(attrSpanElement, '=\u200B"');
@@ -1564,9 +1554,7 @@ export class ElementsTreeElement extends UI.TreeOutline.TreeElement {
     } else if (nodeName === 'image' && (name === 'xlink:href' || name === 'href')) {
       attrValueElement.appendChild(linkifySrcset.call(this, value));
     } else {
-      /* COHERENT_BEGIN */
-      setValueWithEntities.call(this, attrValueElement, value, attrNameElement.textContent.startsWith('data-bind') || attrNameElement.textContent.startsWith('data-meta-for-element'));
-      /* COHERENT_END */
+      setValueWithEntities.call(this, attrValueElement, value);
     }
 
     if (hasText) {
@@ -1648,10 +1636,31 @@ export class ElementsTreeElement extends UI.TreeOutline.TreeElement {
     if (!isClosingTag) {
       if (node.hasAttributes()) {
         const attributes = node.attributes();
+        /* COHERENT_BEGIN */
+        const attrElements = [] as { element: HTMLElement, name: string }[];
+        /* COHERENT_END */
         for (let i = 0; i < attributes.length; ++i) {
           const attr = attributes[i];
           UI.UIUtils.createTextChild(tagElement, ' ');
-          this._buildAttributeDOM(tagElement, attr.name, attr.value, updateRecord, false, node);
+          /* COHERENT_BEGIN */
+          const attrElement = this._buildAttributeDOM(tagElement, attr.name, attr.value, updateRecord, false, node);
+          if (attr.name.startsWith('data-')) attrElements.push({ element: attrElement, name: attr.name });
+        }
+
+        if (attributes.find((attr) => attr.name.startsWith('data-'))) {
+          node.domModel().getDataBindingDataForNode(node.id).then((data) => {
+            for (let i = 0; i < attrElements.length; ++i) {
+              const attrElement = attrElements[i];
+              const showAttributeError = data?.dataBindAttributes.find(({ attributeName, mutators }) =>
+                attributeName === attrElement.name &&
+                mutators.find((mutator) => mutator.compilationError || mutator.parsingError ||
+                  mutator.evaluationNodes.find((evalNode) => evalNode.evaluationError))
+              );
+              attrElement.element.classList.toggle('attribute-error-background', !!showAttributeError);
+              attrElement.element.querySelector('.data-attr-error')?.classList.toggle('hidden', !showAttributeError);
+            }
+          });
+          /* COHERENT_END */
         }
       }
       if (updateRecord) {

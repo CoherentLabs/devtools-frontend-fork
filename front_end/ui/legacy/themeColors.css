@@ -56,6 +56,7 @@
   --color-accent-green: rgb(24 128 56);
   --color-green: rgb(99 172 190);
   --color-link: var(--color-primary);
+  --color-attribute-error: rgb(255 0 0 / 8%);
   --color-syntax-1: rgb(200 0 0);
   --color-syntax-2: rgb(136 18 128);
   --color-syntax-3: rgb(26 26 166);
@@ -158,6 +159,7 @@
   --color-syntax-6: rgb(137 137 137);
   --color-syntax-7: rgb(207 208 208);
   --color-syntax-8: rgb(93 176 215);
+  --color-attribute-error: rgb(255 0 0 / 39%);
   --drop-shadow:
     0 0 0 1px rgb(255 255 255 / 20%),
     0 2px 4px 2px rgb(0 0 0 / 20%),

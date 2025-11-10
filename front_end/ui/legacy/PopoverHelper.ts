@@ -46,7 +46,10 @@ export class PopoverHelper {
   _boundMouseDown: (event: Event) => void;
   _boundMouseMove: (ev: Event) => void;
   _boundMouseOut: (event: Event) => void;
-  constructor(container: Element, getRequest: (arg0: MouseEvent) => PopoverRequest | null) {
+  /* COHERENT_BEGIN */
+  _additionalPopoverCSSFiles: string[]
+  constructor(container: Element, getRequest: (arg0: MouseEvent) => PopoverRequest | null, additionalCSSFiles?: string[]) {
+  /* COHERENT_END */
     this._disableOnClick = false;
     this._hasPadding = false;
     this._getRequest = getRequest;
@@ -57,6 +60,9 @@ export class PopoverHelper {
     this._hideTimeout = 0;
     this._hidePopoverTimer = null;
     this._showPopoverTimer = null;
+    /* COHERENT_BEGIN */
+    this._additionalPopoverCSSFiles = additionalCSSFiles || [];
+    /* COHERENT_END */
     this._boundMouseDown = this._mouseDown.bind(this);
     this._boundMouseMove = this._mouseMove.bind(this);
     this._boundMouseOut = this._mouseOut.bind(this);
@@ -192,6 +198,11 @@ export class PopoverHelper {
   _showPopover(document: Document): void {
     const popover = new GlassPane();
     popover.registerRequiredCSS('ui/legacy/popover.css');
+    /* COHERENT_BEGIN */
+    this._additionalPopoverCSSFiles.forEach((file) => {
+      popover.registerRequiredCSS(file);
+    });
+    /* COHERENT_END */
     popover.setSizeBehavior(SizeBehavior.MeasureContent);
     popover.setMarginBehavior(MarginBehavior.Arrow);
     const request = this._scheduledRequest;

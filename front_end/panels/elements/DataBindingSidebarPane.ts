@@ -17,7 +17,7 @@ const UIStrings = {
   expandAllExpressions: 'Expand all the expressions in the tab',
   collapseAllExpressions: 'Collapse all the expressions in the tab'
 };
-const str_ = i18n.i18n.registerUIStrings('panels/accessibility/AccessibilityNodeView.ts', UIStrings);
+const str_ = i18n.i18n.registerUIStrings('panels/elements/DataBindingSidebarPane.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 
 export class DataBindingSidebarPane extends ElementsSidebarPane {

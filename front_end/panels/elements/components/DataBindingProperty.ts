@@ -23,7 +23,7 @@ export class DataBindBaseTreeElement extends UI.TreeOutline.TreeElement {
     this.selectable = false;
     this.setExpandable(true);
     this.executionContext = executionContext;
-    this.setDisableSelectFocus(true)
+    this.setDisableSelectFocus(true);
     this.warningMark = this.createExclamationMark('');
     this.listItemElement.insertBefore(this.warningMark, this.listItemElement.firstChild);
   }
@@ -88,8 +88,8 @@ export class DataBindNodeInfoTreeElement extends DataBindBaseTreeElement {
   updateStatus(syncStatus: boolean) {
     if (syncStatus !== this.syncStatus) {
       this.syncStatusElement!.textContent = syncStatus ? i18nString(UIStrings.upToDate) : i18nString(UIStrings.outOfSync);
-      this.syncStatusElement?.classList.toggle('status-ok', syncStatus)
-      this.syncStatusElement?.classList.toggle('bind-warning-message', !syncStatus)
+      this.syncStatusElement?.classList.toggle('status-ok', syncStatus);
+      this.syncStatusElement?.classList.toggle('bind-warning-message', !syncStatus);
     }
 
     this.syncStatus = syncStatus;
@@ -98,8 +98,8 @@ export class DataBindNodeInfoTreeElement extends DataBindBaseTreeElement {
   update(evaluationError: string | undefined, syncStatus: boolean) {
     if (evaluationError !== this.evaluationError) {
       this.evaluationErrorElement!.textContent = evaluationError ? evaluationError : i18nString(UIStrings.noErrors);
-      this.evaluationErrorElement?.classList.toggle('status-ok', !evaluationError)
-      this.evaluationErrorElement?.classList.toggle('bind-error-message', !!evaluationError)
+      this.evaluationErrorElement?.classList.toggle('status-ok', !evaluationError);
+      this.evaluationErrorElement?.classList.toggle('bind-error-message', !!evaluationError);
     }
 
     this.evaluationError = evaluationError;
@@ -170,7 +170,7 @@ export class DataBindNodeTreeElement extends DataBindBaseTreeElement {
   createElements(): void {
     this.expressionElement = this.appendSpanElement(this.listItemElement, '', 'object-value-string expression-name');
     this.appendSeparatorElement(this.listItemElement);
-    this.valueElement = this.appendSpanElement(this.listItemElement, 'object-value-string');
+    this.valueElement = this.appendSpanElement(this.listItemElement, '', 'object-value-string');
     this.appendChild(this.dataBindNodeInfoTree);
   }
 }
@@ -189,7 +189,7 @@ export class DataBindAttributeTreeElement extends DataBindBaseTreeElement {
     super(executionContext);
 
     this.listItemElement.classList.add('bind-attribute');
-    this.setWarningMarkTip('Wargnings generated while parsing the attribute');
+    this.setWarningMarkTip('Warnings generated while parsing the attribute');
     this.attributeNameElement = this.appendSpanElement(this.listItemElement, '', 'object-value-string name');
     this.appendSeparatorElement(this.listItemElement);
     this.attributeValueElement = this.appendSpanElement(this.listItemElement, '', 'object-value-string');
@@ -255,7 +255,7 @@ export class DataBindAttributeTreeElement extends DataBindBaseTreeElement {
 
   public stopTimers() {
     if (this.statusInterval) {
-      clearInterval(this.statusInterval)
+      clearInterval(this.statusInterval);
       this.statusInterval = null;
     }
   }
@@ -277,7 +277,7 @@ export class DataBindAttributeTreeElement extends DataBindBaseTreeElement {
     const mutatorsErrors = [] as string[];
     let nodeHasProblem = false;
 
-    for (let mutator of attributeData.mutators) {
+    for (const mutator of attributeData.mutators) {
       if (mutator.parsingError) {
         mutatorsErrors.push(mutator.parsingError);
       }

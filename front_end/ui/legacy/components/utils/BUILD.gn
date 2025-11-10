@@ -12,6 +12,7 @@ devtools_module("utils") {
     "JSPresentationUtils.ts",
     "Linkifier.ts",
     "Reload.ts",
+    "DataBindingUtils.ts",
     "TargetDetachedDialog.ts",
   ]
 

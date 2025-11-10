@@ -1651,7 +1651,7 @@ export class ElementsTreeElement extends UI.TreeOutline.TreeElement {
           node.domModel().getDataBindingDataForNode(node.id).then((data) => {
             for (let i = 0; i < attrElements.length; ++i) {
               const attrElement = attrElements[i];
-              const showAttributeError = data?.dataBindAttributes.find(({ attributeName, mutators }) =>
+              const showAttributeError = data?.dataBindAttributes?.find(({ attributeName, mutators }) =>
                 attributeName === attrElement.name &&
                 mutators.find((mutator) => mutator.compilationError || mutator.parsingError ||
                   mutator.evaluationNodes.find((evalNode) => evalNode.evaluationError))

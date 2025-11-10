@@ -7,6 +7,7 @@ import * as JavaScriptAutocomplete from './JavaScriptAutocomplete.js';
 import * as JavaScriptREPL from './JavaScriptREPL.js';
 import * as ObjectPopoverHelper from './ObjectPopoverHelper.js';
 import * as ObjectPropertiesSection from './ObjectPropertiesSection.js';
+import * as BindObjectPropertiesSection from './BindObjectPropertiesSection.js';
 import * as RemoteObjectPreviewFormatter from './RemoteObjectPreviewFormatter.js';
 
 export {
@@ -15,6 +16,7 @@ export {
   JavaScriptREPL,
   ObjectPopoverHelper,
   ObjectPropertiesSection,
+  BindObjectPropertiesSection,
   RemoteObjectPreviewFormatter,
 };
 

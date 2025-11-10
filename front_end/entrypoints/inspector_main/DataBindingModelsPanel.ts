@@ -43,34 +43,16 @@ import * as ObjectUI from '../../ui/legacy/components/object_ui/object_ui.js';
 import * as Components from '../../ui/legacy/components/utils/utils.js';
 import * as UI from '../../ui/legacy/legacy.js';
 import type * as Protocol from '../../generated/protocol.js';
-
-// import {UISourceCodeFrame} from '../sources/UISourceCodeFrame.js';
+import * as Bindings from '../../models/bindings/bindings.js';
+import { executeRuntimeScript } from '../../ui/legacy/components/utils/DataBindingUtils.js';
+import dataBindingModelsPanelToolbar from 'DataBindingModelsPanelToolbar.css.js';
 
 const UIStrings = {
-    /**
-    *@description A context menu item in the Watch Expressions Sidebar Pane of the Sources panel
-    */
-    addWatchExpression: 'Add watch expression',
-    /**
-    *@description Tooltip/screen reader label of a button in the Sources panel that refreshes all watch expressions.
-    */
-    refreshWatchExpressions: 'Refresh watch expressions',
-    /**
-    *@description Empty element text content in Watch Expressions Sidebar Pane of the Sources panel
-    */
-    noWatchExpressions: 'No watch expressions',
-    /**
-    *@description A context menu item in the Watch Expressions Sidebar Pane of the Sources panel
-    */
-    deleteAllWatchExpressions: 'Delete all watch expressions',
-    /**
-    *@description A context menu item in the Watch Expressions Sidebar Pane of the Sources panel
-    */
-    addPropertyPathToWatch: 'Add property path to watch',
-    /**
-    *@description A context menu item in the Watch Expressions Sidebar Pane of the Sources panel
-    */
-    deleteWatchExpression: 'Delete watch expression',
+    addModel: 'Add new model',
+    refreshModels: 'Refresh models',
+    noModels: 'No models found',
+    deleteAllModels: 'Delete all models',
+    deletModel: 'Delete model',
     /**
     *@description Value element text content in Watch Expressions Sidebar Pane of the Sources panel
     */
@@ -80,58 +62,76 @@ const UIStrings = {
     */
     copyValue: 'Copy value',
     autoUpdateBindModels: 'When enabled the models will be automatically updated',
-    watchForModelChanges: 'Watch for model changes'
+    watchForModelChanges: 'Watch for model changes',
+    loadModels: 'Load models',
+    exportModels: 'Export models',
+    failedToExportModels: 'Failed to export models. Error: {PH1}',
+    failedToLoadModelsError: 'Failed to load models from "{PH1}" file. {PH2}',
+    failedToLoadModels: 'Failed to load models from "{PH1}" file.',
+    modelChangesIntervalLabel: 'Watch interval (ms)'
 };
 const str_ = i18n.i18n.registerUIStrings('panels/sources/WatchExpressionsSidebarPane.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 let dataBindingModelsViewInstance: DataBindingModelsPanelView;
 
+const DEFAULT_WATCH_INTERVAL = 2000;
+// Disabled for now
+// enum BindModelActions {
+//     DELETE = 'delete',
+//     ADD = 'add',
+//     RENAME = 'rename'
+// }
+
 export class DataBindingModelsPanelView extends UI.ThrottledWidget.ThrottledWidget implements
-    UI.ActionRegistration.ActionDelegate, UI.Toolbar.ItemsProvider, UI.ContextMenu.Provider {
-    _watchExpressions: WatchExpression[];
+    UI.Toolbar.ItemsProvider, UI.Toolbar.WrappableProvider {
     _emptyElement!: HTMLElement;
-    _watchExpressionsSetting: Common.Settings.Setting<string[]>;
-    _treeOutline: ObjectUI.ObjectPropertiesSection.ObjectPropertiesSectionsTreeOutline;
-    _expandController: ObjectUI.ObjectPropertiesSection.ObjectPropertiesSectionsTreeExpandController;
+    _bindModels: BindModel[];
+    _bindModelsSetting: Common.Settings.Setting<string[]>;
+    _treeOutline: ObjectUI.BindObjectPropertiesSection.ObjectPropertiesSectionsTreeOutline;
+    _expandController: ObjectUI.BindObjectPropertiesSection.ObjectPropertiesSectionsTreeExpandController;
     _linkifier: Components.Linkifier.Linkifier;
-    _autoUpdateBindModelsSetting: Common.Settings.Setting<boolean>;
-    _toolbarItems: (UI.Toolbar.ToolbarButton | UI.Toolbar.ToolbarSettingCheckbox)[];
+    _autoUpdateBindModelsSetting: Common.Settings.Setting<boolean> = Common.Settings.Settings.instance().moduleSetting('autoUpdateBindModels');
+    _watchIntervalValue: Common.Settings.Setting<number> = Common.Settings.Settings.instance().moduleSetting('autoUpdateBindModelsInterval');
+    _toolbarItems: (UI.Toolbar.ToolbarButton | UI.Toolbar.ToolbarSettingCheckbox | UI.Toolbar.ToolbarSeparator | UI.Toolbar.ToolbarItem)[] = [];
+    _fileSelectorElement: HTMLInputElement | null = null;
+    _watchInterval: any;
+    _intervalInput: HTMLInputElement | null = null;
+    _inputIntervalWrapper: HTMLDivElement | null = null;
     private constructor() {
         super(true);
-        this._toolbarItems = [];
-
-        const refreshButton =
-            new UI.Toolbar.ToolbarButton(i18nString(UIStrings.refreshWatchExpressions), 'largeicon-refresh');
-        refreshButton.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, this.update, this);
-        this._toolbarItems.push(refreshButton);
-
-        this._autoUpdateBindModelsSetting = Common.Settings.Settings.instance().moduleSetting('autoUpdateBindModels');
-        this._autoUpdateBindModelsSetting.addChangeListener(this.update.bind(this));
-
-        this._toolbarItems.push(new UI.Toolbar.ToolbarSettingCheckbox(
-            this._autoUpdateBindModelsSetting, i18nString(UIStrings.autoUpdateBindModels), i18nString(UIStrings.watchForModelChanges)));
 
         this.registerRequiredCSS('ui/legacy/components/object_ui/objectValue.css');
         this.registerRequiredCSS('panels/sources/watchExpressionsSidebarPane.css');
 
-        // TODO(szuend): Replace with a Set once the web test
-        // panels/sources/debugger-ui/watch-expressions-preserve-expansion.js is either converted
-        // to an e2e test or no longer accesses this variable directly.
-        this._watchExpressions = [];
-        this._watchExpressionsSetting =
+        this.createToolbar();
+        this._createFileSelector();
+
+        this._watchInterval = null;
+
+        this._bindModels = [];
+        this._bindModelsSetting =
             Common.Settings.Settings.instance().createLocalSetting<string[]>('dataBindingModels', []);
-        this._watchExpressionsSetting.set(['inventoryModel'])
+        this._bindModelsSetting.set([]);
         this.contentElement.classList.add('watch-expressions');
         this.contentElement.addEventListener('contextmenu', this._contextMenu.bind(this), false);
-        this._treeOutline = new ObjectUI.ObjectPropertiesSection.ObjectPropertiesSectionsTreeOutline();
+        this._treeOutline = new ObjectUI.BindObjectPropertiesSection.ObjectPropertiesSectionsTreeOutline();
         this._treeOutline.registerRequiredCSS('panels/sources/watchExpressionsSidebarPane.css');
         this._treeOutline.setShowSelectionOnKeyboardFocus(/* show */ true);
         this._expandController =
-            new ObjectUI.ObjectPropertiesSection.ObjectPropertiesSectionsTreeExpandController(this._treeOutline);
+            new ObjectUI.BindObjectPropertiesSection.ObjectPropertiesSectionsTreeExpandController(this._treeOutline);
 
         UI.Context.Context.instance().addFlavorChangeListener(SDK.RuntimeModel.ExecutionContext, this.update, this);
         UI.Context.Context.instance().addFlavorChangeListener(SDK.DebuggerModel.CallFrame, this.update, this);
         this._linkifier = new Components.Linkifier.Linkifier();
+
+        this._emptyElement = (this.contentElement.createChild('div', 'gray-info-message') as HTMLElement);
+        this._emptyElement.textContent = i18nString(UIStrings.noModels);
+        this._emptyElement.tabIndex = -1;
+
+        if (this._autoUpdateBindModelsSetting.get()) {
+            this.addAutoRefreshInterval();
+        }
+
         this.update();
     }
 
@@ -146,82 +146,318 @@ export class DataBindingModelsPanelView extends UI.ThrottledWidget.ThrottledWidg
         return dataBindingModelsViewInstance;
     }
 
+    addAutoRefreshInterval() {
+        if (this._watchInterval) return;
+
+        this._inputIntervalWrapper?.classList.remove('hidden');
+
+        this._watchInterval = setInterval(() => this.update(), this._watchIntervalValue.get())
+    }
+
+    clearWatchInterval() {
+        if (this._watchInterval) {
+            this._inputIntervalWrapper?.classList.add('hidden');
+            clearInterval(this._watchInterval);
+            this._watchInterval = null;
+        }
+    }
+
+    handleAutoUpdateSetting() {
+        if (this._autoUpdateBindModelsSetting.get()) {
+            this.addAutoRefreshInterval();
+        } else {
+            this.clearWatchInterval();
+        }
+    }
+
+    createToolbar() {
+        this._toolbarItems = [];
+
+        const refreshButton =
+            new UI.Toolbar.ToolbarButton(i18nString(UIStrings.refreshModels), 'largeicon-refresh');
+        refreshButton.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, this.update, this);
+        this._toolbarItems.push(refreshButton);
+
+        this._toolbarItems.push(new UI.Toolbar.ToolbarSeparator());
+
+        const loadModelsIcon = new UI.Toolbar.ToolbarButton(i18nString(UIStrings.loadModels), 'largeicon-load');
+        loadModelsIcon.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, this._selectFileToLoad.bind(this));
+        const exportModelsIcon = new UI.Toolbar.ToolbarButton(i18nString(UIStrings.exportModels), 'largeicon-download');
+        exportModelsIcon.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, this._saveToFile.bind(this));
+
+        this._toolbarItems.push(loadModelsIcon);
+        this._toolbarItems.push(exportModelsIcon);
+
+        this._toolbarItems.push(new UI.Toolbar.ToolbarSeparator());
+
+        // Disable for now
+        // const addButton = new UI.Toolbar.ToolbarButton(i18nString(UIStrings.addModel), 'largeicon-add');
+        // addButton.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, this._addButtonClicked, this);
+        // this._toolbarItems.push(addButton);
+
+        this._autoUpdateBindModelsSetting.addChangeListener(this.handleAutoUpdateSetting.bind(this));
+
+        this._toolbarItems.push(new UI.Toolbar.ToolbarSettingCheckbox(
+            this._autoUpdateBindModelsSetting, i18nString(UIStrings.autoUpdateBindModels), i18nString(UIStrings.watchForModelChanges)));
+
+        this._intervalInput = Object.assign(document.createElement('input') as HTMLInputElement, {
+            type: 'number',
+            inputMode: 'numeric',
+            pattern: '\\d*',
+            className: 'update-models-interval-input',
+        });
+        this._intervalInput.addEventListener('blur', this.handleWatchIntervalChange.bind(this));
+        if (!this._watchIntervalValue.get()) {
+            this._watchIntervalValue.set(DEFAULT_WATCH_INTERVAL);
+            this._intervalInput.value = String(DEFAULT_WATCH_INTERVAL);
+        } else {
+            this._intervalInput.value = String(this._watchIntervalValue.get());
+        }
+
+        this._inputIntervalWrapper = document.createElement('div');
+        this._inputIntervalWrapper.classList.add('hidden');
+
+        const inputLabel = document.createElement('span');
+        inputLabel.textContent = i18nString(UIStrings.modelChangesIntervalLabel);
+        inputLabel.classList.add('update-models-interval-label');
+
+        const separator = document.createElement('div');
+        separator.classList.add('toolbar-divider');
+        this._inputIntervalWrapper.appendChild(separator);
+        this._inputIntervalWrapper.appendChild(inputLabel);
+        this._inputIntervalWrapper.appendChild(this._intervalInput);
+
+        const inputToolbarItem = new UI.Toolbar.ToolbarItem(this._inputIntervalWrapper);
+        this._toolbarItems.push(inputToolbarItem);
+    }
+
+    wasShown(): void {
+        const toolbar = this.parentWidget()?.element.querySelector('.toolbar') as HTMLElement | null;
+        if (!toolbar || !toolbar.shadowRoot) return;
+
+        toolbar.shadowRoot.adoptedStyleSheets = [...toolbar.shadowRoot.adoptedStyleSheets, dataBindingModelsPanelToolbar];
+    }
+
+    handleWatchIntervalChange() {
+        if (!this._intervalInput!.value) {
+            this._intervalInput!.value = String(this._watchIntervalValue.get());
+            return;
+        }
+
+        const value = parseInt(this._intervalInput!.value);
+
+        if (value === this._watchInterval) return;
+
+        this._watchIntervalValue.set(value);
+
+        this.clearWatchInterval();
+        this.addAutoRefreshInterval();
+    }
+
+    _createFileSelector(): void {
+        if (this._fileSelectorElement) {
+            this._fileSelectorElement.remove();
+        }
+        this._fileSelectorElement = UI.UIUtils.createFileSelectorElement(this._loadFromFile.bind(this));
+        this.element.appendChild(this._fileSelectorElement);
+    }
+
+    _selectFileToLoad(): void {
+        if (this._fileSelectorElement) {
+            this._fileSelectorElement.click();
+        }
+    }
+
+    async readFileData(file: File) {
+        const outputStream = new Common.StringOutputStream.StringOutputStream();
+        const reader = new Bindings.FileUtils.ChunkedFileReader(file, /* chunkSize */ 10000000);
+        const success = await reader.read(outputStream);
+        if (!success) {
+            const error = reader.error();
+            if (error) throw new Error(error.message);
+
+            return null;
+        }
+
+        return JSON.parse(outputStream.data());
+    }
+
+    async _loadFromFile(file: File): Promise<void> {
+        let models = null;
+        try {
+            models = await this.readFileData(file);
+        } catch (error: any | { message: string }) {
+            Common.Console.Console.instance().error(i18nString(UIStrings.failedToLoadModelsError, { PH1: file.name, PH2: error?.message }));
+        }
+
+        if (!models || !await this.importModels(models)) {
+            Common.Console.Console.instance().error(i18nString(UIStrings.failedToLoadModels, { PH1: file.name }));
+        }
+        this._createFileSelector();
+    }
+
+    async _saveToFile(): Promise<void> {
+        const models = await this.getAllModelsData();
+        if (!models) return;
+
+        const now = new Date();
+        const fileName = 'Models-' + Platform.DateUtilities.toISO8601Compact(now) + '.json';
+        const stream = new Bindings.FileUtils.FileOutputStream();
+
+        const accepted = await stream.open(fileName);
+        if (!accepted) return;
+
+        const backingStorage = new Bindings.TempFile.TempFileBackingStorage();
+        backingStorage.appendString(JSON.stringify(models, undefined, 2));
+        backingStorage.finishWriting();
+
+        const error = (await backingStorage.writeToStream(stream) as {
+            message: string,
+            name: string,
+            code: number,
+        } | null);
+        if (!error) return;
+
+        Common.Console.Console.instance().error(
+            i18nString(UIStrings.failedToExportModels, { PH1: error.message, PH2: error.name, PH3: error.code }));
+    }
+
+    async getModelNamesData() {
+        const domModel = SDK.TargetManager.TargetManager.instance().mainTarget()?.model(SDK.DOMModel.DOMModel)
+        const res = await domModel?.getDataBindingModelNames();
+        if (!res || !res.models) return [];
+
+        return res.models;
+    }
+
+    async getAllModelsData() {
+        const domModel = SDK.TargetManager.TargetManager.instance().mainTarget()?.model(SDK.DOMModel.DOMModel)
+        const res = await domModel?.getDataBindingModels();
+        if (!res) return {};
+
+        return res;
+    }
+
+    async importModels(data: object) {
+        const domModel = SDK.TargetManager.TargetManager.instance().mainTarget()?.model(SDK.DOMModel.DOMModel)
+        const res = await domModel?.importDataBindingModels(data);
+        if (!res || res.getError()) return false;
+
+        return true;
+    }
+
     toolbarItems(): UI.Toolbar.ToolbarItem[] {
         return this._toolbarItems;
+    }
+
+    toolbarWrappable() {
+        return true;
     }
 
     focus(): void {
         if (this.hasFocus()) {
             return;
         }
-        if (this._watchExpressions.length > 0) {
+        if (this._bindModels.length > 0) {
             this._treeOutline.forceSelect();
         }
     }
 
-    hasExpressions(): boolean {
-        return Boolean(this._watchExpressionsSetting.get().length);
+    hasModels(): boolean {
+        return Boolean(this._bindModelsSetting.get().length);
     }
 
-    _saveExpressions(): void {
+    _saveModels(): void {
         const toSave = [];
-        for (let i = 0; i < this._watchExpressions.length; i++) {
-            const expression = this._watchExpressions[i].expression();
-            if (expression) {
-                toSave.push(expression);
-            }
+        for (let i = 0; i < this._bindModels.length; i++) {
+            const model = this._bindModels[i].modelName;
+            if (model) toSave.push(model);
         }
 
-        this._watchExpressionsSetting.set(toSave);
+        this._bindModelsSetting.set(toSave);
     }
 
-    doUpdate(): Promise<void> {
-        this._linkifier.reset();
-        this.contentElement.removeChildren();
-        this._treeOutline.removeChildren();
-        this._watchExpressions.forEach((expression) => expression.clearWatchInterval());
-        this._watchExpressions = [];
-        this._emptyElement = (this.contentElement.createChild('div', 'gray-info-message') as HTMLElement);
-        this._emptyElement.textContent = i18nString(UIStrings.noWatchExpressions);
-        this._emptyElement.tabIndex = -1;
+    async doUpdate(): Promise<void> {
+        const modelNames = await this.getModelNamesData();
+        this._emptyElement.classList.toggle('hidden', !!modelNames.length);
 
-        const watchExpressionStrings = this._watchExpressionsSetting.get();
-        if (watchExpressionStrings.length) {
-            this._emptyElement.classList.add('hidden');
+        for (let i = 0; i < modelNames.length; ++i) {
+            const modelName = modelNames[i];
+            const bindModel = this._bindModels[i];
+            if (!bindModel) {
+                this._createBindModel(modelName);
+            } else {
+                if (bindModel.modelName !== modelName) {
+                    bindModel._expandController.stopWatchSectionsWithId(bindModel.modelName as string);
+                    bindModel.modelName = modelName;
+                }
+                bindModel.update();
+            }
         }
-        for (let i = 0; i < watchExpressionStrings.length; ++i) {
-            const expression = watchExpressionStrings[i];
-            if (!expression) {
-                continue;
+
+        if (this._bindModels.length > modelNames.length) {
+            for (let i = modelNames.length; i < this._bindModels.length; i++) {
+                this._treeOutline.removeChild(this._bindModels[i].treeElement());
             }
 
-            this._createWatchExpression(expression);
+            this._bindModels.splice(modelNames.length, this._bindModels.length);
         }
+
+        this._bindModelsSetting.set(modelNames);
+
         return Promise.resolve();
     }
 
-    _createWatchExpression(expression: string | null): WatchExpression {
+    _createBindModel(modelName: string | null): BindModel {
         this.contentElement.appendChild(this._treeOutline.element);
-        const watchExpression = new WatchExpression(expression, this._expandController, this._linkifier, this._autoUpdateBindModelsSetting.get());
-        watchExpression.addEventListener(WatchExpression.Events.ExpressionUpdated, this._watchExpressionUpdated, this);
-        this._treeOutline.appendChild(watchExpression.treeElement());
-        this._watchExpressions.push(watchExpression);
-        return watchExpression;
+        const bindModel = new BindModel(modelName, this._expandController, this._linkifier);
+        // Disabled for now
+        // bindModel.addEventListener(BindModel.Events.ModelUpdated, this._bindModelUpdated, this);
+        this._treeOutline.appendChild(bindModel.treeElement());
+        this._bindModels.push(bindModel);
+        return bindModel;
     }
 
-    _watchExpressionUpdated(event: Common.EventTarget.EventTargetEvent): void {
-        const watchExpression = (event.data as WatchExpression);
-        if (!watchExpression.expression()) {
-            Platform.ArrayUtilities.removeElement(this._watchExpressions, watchExpression);
-            this._treeOutline.removeChild(watchExpression.treeElement());
-            this._emptyElement.classList.toggle('hidden', Boolean(this._watchExpressions.length));
-            if (this._watchExpressions.length === 0) {
-                this._treeOutline.element.remove();
-            }
-        }
+    // Disabled for now
+    // async _bindModelUpdated(event: Common.EventTarget.EventTargetEvent): Promise<void> {
+    //     const { bindModelObject, newModel, action } = (event.data as { bindModelObject: BindModel, newModel: string, action: BindModelActions });
+    //     switch (action) {
+    //         case BindModelActions.DELETE: {
+    //             Platform.ArrayUtilities.removeElement(this._bindModels, bindModelObject);
+    //             this._treeOutline.removeChild(bindModelObject.treeElement());
+    //             this._emptyElement.classList.toggle('hidden', Boolean(this._bindModels.length));
+    //             if (this._bindModels.length === 0) {
+    //                 this._treeOutline.element.remove();
+    //             }
+    //             await Components.DataBindingUtils.unregisterBindModel(bindModelObject.model!);
+    //             break;
+    //         }
+    //         case BindModelActions.ADD: {
+    //             if (this._bindModels.find((bindModel) => bindModel.model === newModel)) {
+    //                 console.warn(`Unable to add model with name '${newModel}' because it already exists!`);
+    //                 break;
+    //             }
 
-        this._saveExpressions();
-    }
+    //             await Components.DataBindingUtils.createBindModel(newModel);
+    //             bindModelObject._model = newModel;
+    //             break;
+    //         }
+    //         case BindModelActions.RENAME: {
+    //             if (bindModelObject.model === newModel) break;
+    //             if (this._bindModels.find((bindModel) => bindModel.model === newModel)) {
+    //                 console.warn(`Unable to rename model with name '${newModel}' because it already exists!`);
+    //                 break;
+    //             }
+    //             await Components.DataBindingUtils.renameBindModel(newModel, bindModelObject.model!);
+    //             bindModelObject._model = newModel;
+    //             break;
+    //         }
+    //         default: break;
+    //     }
+
+    //     bindModelObject.update();
+    //     this._saveModels();
+    // }
 
     _contextMenu(event: MouseEvent): void {
         const contextMenu = new UI.ContextMenu.ContextMenu(event);
@@ -229,95 +465,67 @@ export class DataBindingModelsPanelView extends UI.ThrottledWidget.ThrottledWidg
         contextMenu.show();
     }
 
+    // Disable for now
+    // async _addButtonClicked(): Promise<void> {
+    //     this._emptyElement.classList.add('hidden');
+    //     this._createBindModel(null).startEditing();
+    // }
+
     _populateContextMenu(contextMenu: UI.ContextMenu.ContextMenu, event: MouseEvent): void {
-        let isEditing = false;
-        for (const watchExpression of this._watchExpressions) {
-            isEditing = isEditing || watchExpression.isEditing();
-        }
+        // Disable for now
+        // let isEditing = false;
+        // for (const bindModel of this._bindModels) {
+        //     isEditing = isEditing || bindModel.isEditing();
+        // }
 
         // if (!isEditing) {
         //     contextMenu.debugSection().appendItem(
-        //         i18nString(UIStrings.addWatchExpression), this._addButtonClicked.bind(this));
+        //         i18nString(UIStrings.addModel), this._addButtonClicked.bind(this));
         // }
 
-        if (this._watchExpressions.length > 1) {
-            contextMenu.debugSection().appendItem(
-                i18nString(UIStrings.deleteAllWatchExpressions), this._deleteAllButtonClicked.bind(this));
-        }
+        // if (this._bindModels.length > 1) {
+        //     contextMenu.debugSection().appendItem(
+        //         i18nString(UIStrings.deleteAllModels), this._deleteAllButtonClicked.bind(this));
+        // }
 
         const treeElement = this._treeOutline.treeElementFromEvent(event);
         if (!treeElement) {
             return;
         }
-        const currentWatchExpression =
-            this._watchExpressions.find(watchExpression => treeElement.hasAncestorOrSelf(watchExpression.treeElement()));
-        if (currentWatchExpression) {
-            currentWatchExpression._populateContextMenu(contextMenu, event);
+        const currentBindModel =
+            this._bindModels.find(bindModel => treeElement.hasAncestorOrSelf(bindModel.treeElement()));
+        if (currentBindModel) {
+            currentBindModel._populateContextMenu(contextMenu, event);
         }
     }
 
-    _deleteAllButtonClicked(): void {
-        this._watchExpressions = [];
-        this._saveExpressions();
-        this.update();
-    }
-
-    async _focusAndAddExpressionToWatch(expression: string): Promise<void> {
-        await UI.ViewManager.ViewManager.instance().showView('sources.watch');
-        this._createWatchExpression(expression);
-        this._saveExpressions();
-        this.update();
-    }
-
-    handleAction(_context: UI.Context.Context, _actionId: string): boolean {
-        return false
-        // const frame = UI.Context.Context.instance().flavor(UISourceCodeFrame);
-        // if (!frame) {
-        //   return false;
-        // }
-        // const text = frame.textEditor.text(frame.textEditor.selection());
-        // this._focusAndAddExpressionToWatch(text);
-        // return true;
-    }
-
-    appendApplicableItems(event: Event, contextMenu: UI.ContextMenu.ContextMenu, target: Object): void {
-        return;
-        // if (target instanceof ObjectUI.ObjectPropertiesSection.ObjectPropertyTreeElement && !target.property.synthetic) {
-        //     contextMenu.debugSection().appendItem(
-        //         i18nString(UIStrings.addPropertyPathToWatch), () => this._focusAndAddExpressionToWatch(target.path()));
-        // }
-
-        // const frame = UI.Context.Context.instance().flavor(UISourceCodeFrame);
-        // if (!frame || frame.textEditor.selection().isEmpty()) {
-        //     return;
-        // }
-
-        // contextMenu.debugSection().appendAction('sources.add-to-watch');
-    }
+    // Disabled for now
+    // _deleteAllButtonClicked(): void {
+    //     this._bindModels = [];
+    //     this._saveModels();
+    //     this.update();
+    // }
 }
 
-export class WatchExpression extends Common.ObjectWrapper.ObjectWrapper {
-    _treeElement!: UI.TreeOutline.TreeElement;
+export class BindModel extends Common.ObjectWrapper.ObjectWrapper {
+    _treeElement!: ObjectUI.BindObjectPropertiesSection.RootElement;
     _nameElement!: Element;
     _valueElement!: Element;
-    _expression: string | null;
-    _expandController: ObjectUI.ObjectPropertiesSection.ObjectPropertiesSectionsTreeExpandController;
+    _modelName!: string | null
+    _expandController: ObjectUI.BindObjectPropertiesSection.ObjectPropertiesSectionsTreeExpandController;
     _element: HTMLDivElement;
     _editing: boolean;
     _linkifier: Components.Linkifier.Linkifier;
-    _textPrompt?: ObjectUI.ObjectPropertiesSection.ObjectPropertyPrompt;
+    _textPrompt?: ObjectUI.BindObjectPropertiesSection.ObjectPropertyPrompt;
     _result?: SDK.RemoteObject.RemoteObject | null;
     _preventClickTimeout?: number;
-    _watchInterval: any;
     constructor(
-        expression: string | null,
-        expandController: ObjectUI.ObjectPropertiesSection.ObjectPropertiesSectionsTreeExpandController,
-        linkifier: Components.Linkifier.Linkifier,
-        autoUpdateModels = false) {
+        modelName: string | null,
+        expandController: ObjectUI.BindObjectPropertiesSection.ObjectPropertiesSectionsTreeExpandController,
+        linkifier: Components.Linkifier.Linkifier) {
         super();
 
-        this._watchInterval = null;
-        this._expression = expression;
+        this._modelName = modelName;
         this._expandController = expandController;
         this._element = document.createElement('div');
         this._element.classList.add('watch-expression');
@@ -325,126 +533,117 @@ export class WatchExpression extends Common.ObjectWrapper.ObjectWrapper {
         this._editing = false;
         this._linkifier = linkifier;
 
-        this._createWatchExpression();
+        this._createBindModel();
         this.update();
-        if (autoUpdateModels) {
-            this._watchInterval = setInterval(() => this.update(), 2000)
-        }
-    }
-
-    clearWatchInterval() {
-        if (this._watchInterval) clearInterval(this._watchInterval);
     }
 
     treeElement(): UI.TreeOutline.TreeElement {
         return this._treeElement;
     }
 
-    expression(): string | null {
-        return this._expression;
+    get modelName(): string | null {
+        return this._modelName;
+    }
+
+    set modelName(value: string | null) {
+        this._modelName = value;
     }
 
     update(): void {
-        const currentExecutionContext = UI.Context.Context.instance().flavor(SDK.RuntimeModel.ExecutionContext);
-        if (currentExecutionContext && this._expression) {
-            currentExecutionContext
-                .evaluate(
-                    {
-                        expression: this._expression,
-                        objectGroup: WatchExpression.watchObjectGroupId,
-                        includeCommandLineAPI: false,
-                        silent: true,
-                        returnByValue: false,
-                        generatePreview: false,
-                        allowUnsafeEvalBlockedByCSP: undefined,
-                        disableBreaks: undefined,
-                        replMode: undefined,
-                        throwOnSideEffect: undefined,
-                        timeout: undefined,
-                    },
-              /* userGesture */ false,
-              /* awaitPromise */ false)
+        if (this._modelName) {
+            executeRuntimeScript(this._modelName, BindModel.watchObjectGroupId)
                 .then(result => {
-                    if ('object' in result) {
-                        this._createWatchExpression(result.object, result.exceptionDetails);
+                    if (result && 'object' in result) {
+                        this._updateBindModel(result.object, result.exceptionDetails);
                     } else {
-                        this._createWatchExpression();
+                        this._updateBindModel();
                     }
                 });
         } else {
-            this._createWatchExpression();
+            this._updateBindModel();
         }
     }
 
-    startEditing(): void {
-        this._editing = true;
-        this._treeElement.setDisableSelectFocus(true);
-        this._element.removeChildren();
-        const newDiv = this._element.createChild('div');
-        newDiv.textContent = this._nameElement.textContent;
-        this._textPrompt = new ObjectUI.ObjectPropertiesSection.ObjectPropertyPrompt();
-        this._textPrompt.renderAsBlock();
-        const proxyElement =
-            (this._textPrompt.attachAndStartEditing(newDiv, this._finishEditing.bind(this)) as HTMLElement);
-        this._treeElement.listItemElement.classList.add('watch-expression-editing');
-        this._treeElement.collapse();
-        proxyElement.classList.add('watch-expression-text-prompt-proxy');
-        proxyElement.addEventListener('keydown', this._promptKeyDown.bind(this), false);
-        const selection = this._element.getComponentSelection();
-        if (selection) {
-            selection.selectAllChildren(newDiv);
-        }
-    }
+    // Disabled for now
+    // startEditing(): void {
+    //     this._editing = true;
+    //     this._treeElement.setDisableSelectFocus(true);
+    //     this._element.removeChildren();
+    //     const newDiv = this._element.createChild('div');
+    //     newDiv.textContent = this._nameElement.textContent;
+    //     this._textPrompt = new ObjectUI.BindObjectPropertiesSection.ObjectPropertyPrompt();
+    //     this._textPrompt.renderAsBlock();
+    //     const proxyElement =
+    //         (this._textPrompt.attachAndStartEditing(newDiv, this._finishEditing.bind(this)) as HTMLElement);
+    //     this._treeElement.listItemElement.classList.add('watch-expression-editing');
+    //     this._treeElement.collapse();
+    //     proxyElement.classList.add('watch-expression-text-prompt-proxy');
+    //     proxyElement.addEventListener('keydown', this._promptKeyDown.bind(this), false);
+    //     const selection = this._element.getComponentSelection();
+    //     if (selection) {
+    //         selection.selectAllChildren(newDiv);
+    //     }
+    // }
 
     isEditing(): boolean {
         return Boolean(this._editing);
     }
 
-    _finishEditing(event: Event, canceled?: boolean): void {
-        if (event) {
-            event.consume(canceled);
-        }
+    // Disabled for now
+    // _finishEditing(event: Event, canceled?: boolean): void {
+    //     if (event) {
+    //         event.consume(canceled);
+    //     }
 
-        this._editing = false;
-        this._treeElement.setDisableSelectFocus(false);
-        this._treeElement.listItemElement.classList.remove('watch-expression-editing');
-        if (this._textPrompt) {
-            this._textPrompt.detach();
-            const newExpression = canceled ? this._expression : this._textPrompt.text();
-            this._textPrompt = undefined;
-            this._element.removeChildren();
-            this._updateExpression(newExpression);
-        }
-    }
+    //     this._editing = false;
+    //     this._treeElement.setDisableSelectFocus(false);
+    //     this._treeElement.listItemElement.classList.remove('watch-expression-editing');
+    //     if (this._textPrompt) {
+    //         this._textPrompt.detach();
+    //         const newModel = canceled ? this._modelName : this._textPrompt.text();
+    //         this._textPrompt = undefined;
+    //         this._element.removeChildren();
+    //         this._updateModel(BindModelActions.RENAME, newModel);
+    //     }
+    // }
 
-    _dblClickOnWatchExpression(event: Event): void {
-        event.consume();
-        if (!this.isEditing()) {
-            this.startEditing();
-        }
-    }
+    // _dblClickOnBindModel(event: Event): void {
+    //     event.consume();
+    //     if (!this.isEditing()) {
+    //         this.startEditing();
+    //     }
+    // }
 
-    _updateExpression(newExpression: string | null): void {
-        if (this._expression) {
-            this._expandController.stopWatchSectionsWithId(this._expression);
-        }
-        this._expression = newExpression;
-        this.update();
-        this.dispatchEventToListeners(WatchExpression.Events.ExpressionUpdated, this);
-    }
+    // _updateModel(action: BindModelActions, newModel: string | null): void {
+    //     if (this._modelName) {
+    //         this._expandController.stopWatchSectionsWithId(this._modelName);
+    //     }
 
-    _deleteWatchExpression(event: Event): void {
-        event.consume(true);
-        this._updateExpression(null);
-    }
+    //     let processedAction;
+    //     // Handle action if it is RENAME. We have three scenarions here - if you add new model, if you delete model or if you rename it.
+    //     if (action === BindModelActions.RENAME) {
+    //         if ((this._modelName === '' || this._modelName === null) && newModel !== null && newModel !== '') processedAction = BindModelActions.ADD;
+    //         else if (this._modelName !== '' && (newModel === null || newModel === '')) processedAction = BindModelActions.DELETE;
+    //         else processedAction = BindModelActions.RENAME;
+    //     } else {
+    //         processedAction = action;
+    //     }
 
-    _createWatchExpression(result?: SDK.RemoteObject.RemoteObject, exceptionDetails?: Protocol.Runtime.ExceptionDetails):
+    //     this.dispatchEventToListeners(BindModel.Events.ModelUpdated, { bindModelObject: this, newModel, action: processedAction });
+    // }
+
+    // _deleteModel(event: Event): void {
+    //     event.consume(true);
+    //     this._updateModel(BindModelActions.DELETE, null);
+    // }
+
+    _createBindModel(result?: SDK.RemoteObject.RemoteObject, exceptionDetails?: Protocol.Runtime.ExceptionDetails):
         void {
         this._result = result || null;
 
         this._element.removeChildren();
         const oldTreeElement = this._treeElement;
-        this._createWatchExpressionTreeElement(result, exceptionDetails);
+        this._createBindModelTreeElement(result, exceptionDetails);
         if (oldTreeElement && oldTreeElement.parent) {
             const root = oldTreeElement.parent;
             const index = root.indexOfChild(oldTreeElement);
@@ -454,17 +653,23 @@ export class WatchExpression extends Common.ObjectWrapper.ObjectWrapper {
         this._treeElement.select();
     }
 
-    _createWatchExpressionHeader(
-        expressionValue?: SDK.RemoteObject.RemoteObject, exceptionDetails?: Protocol.Runtime.ExceptionDetails): Element {
-        const headerElement = this._element.createChild('div', 'watch-expression-header');
-        // const deleteButton = UI.Icon.Icon.create('smallicon-cross', 'watch-expression-delete-button');
-        // UI.Tooltip.Tooltip.install(deleteButton, i18nString(UIStrings.deleteWatchExpression));
-        // deleteButton.addEventListener('click', this._deleteWatchExpression.bind(this), false);
+    _updateBindModel(result?: SDK.RemoteObject.RemoteObject, exceptionDetails?: Protocol.Runtime.ExceptionDetails): void {
+        this._result = result || null;
+        this._updateBindModelTreeElement(result, exceptionDetails);
+    }
 
+    _createBindModelHeader(modelValue?: SDK.RemoteObject.RemoteObject, exceptionDetails?: Protocol.Runtime.ExceptionDetails): Element {
+        const headerElement = this._element.createChild('div', 'watch-expression-header');
         const titleElement = headerElement.createChild('div', 'watch-expression-title tree-element-title');
+
+        // Disabled for now
+        // const deleteButton = UI.Icon.Icon.create('smallicon-cross', 'watch-expression-delete-button');
+        // UI.Tooltip.Tooltip.install(deleteButton, i18nString(UIStrings.deletModel));
+        // deleteButton.addEventListener('click', this._deleteModel.bind(this), false);
         // titleElement.appendChild(deleteButton);
-        this._nameElement = ObjectUI.ObjectPropertiesSection.ObjectPropertiesSection.createNameElement(this._expression);
-        if (Boolean(exceptionDetails) || !expressionValue) {
+
+        this._nameElement = ObjectUI.BindObjectPropertiesSection.BindObjectPropertiesSection.createNameElement(this._modelName);
+        if (Boolean(exceptionDetails) || !modelValue) {
             this._valueElement = document.createElement('span');
             this._valueElement.classList.add('watch-expression-error');
             this._valueElement.classList.add('value');
@@ -476,8 +681,8 @@ export class WatchExpression extends Common.ObjectWrapper.ObjectWrapper {
             }
         } else {
             const propertyValue =
-                ObjectUI.ObjectPropertiesSection.ObjectPropertiesSection.createPropertyValueWithCustomSupport(
-                    expressionValue, Boolean(exceptionDetails), false /* showPreview */, titleElement, this._linkifier);
+                ObjectUI.BindObjectPropertiesSection.BindObjectPropertiesSection.createPropertyValueWithCustomSupport(
+                    modelValue, Boolean(exceptionDetails), false /* showPreview */, titleElement, this._linkifier);
             this._valueElement = propertyValue.element;
         }
         const separatorElement = document.createElement('span');
@@ -488,66 +693,114 @@ export class WatchExpression extends Common.ObjectWrapper.ObjectWrapper {
         return headerElement;
     }
 
-    _createWatchExpressionTreeElement(
-        expressionValue?: SDK.RemoteObject.RemoteObject, exceptionDetails?: Protocol.Runtime.ExceptionDetails): void {
-        const headerElement = this._createWatchExpressionHeader(expressionValue, exceptionDetails);
+    _updateBindModelHeader(modelValue?: SDK.RemoteObject.RemoteObject, exceptionDetails?: Protocol.Runtime.ExceptionDetails): void {
+        const titleElement = this._element.querySelector('.tree-element-title');
 
-        if (!exceptionDetails && expressionValue && expressionValue.hasChildren && !expressionValue.customPreview()) {
+        ObjectUI.BindObjectPropertiesSection.BindObjectPropertiesSection.updateNameElement(this._nameElement, this._modelName);
+        if (Boolean(exceptionDetails) || !modelValue) {
+            this._valueElement.classList.add('watch-expression-error');
+            this._valueElement.classList.add('value');
+            titleElement!.classList.add('dimmed');
+            this._valueElement.textContent = i18nString(UIStrings.notAvailable);
+            if (exceptionDetails !== undefined && exceptionDetails.exception !== undefined &&
+                exceptionDetails.exception.description !== undefined) {
+                UI.Tooltip.Tooltip.install(this._valueElement as HTMLElement, exceptionDetails.exception.description);
+            }
+        } else {
+            titleElement!.classList.remove('dimmed');
+            const propertyValue =
+                ObjectUI.BindObjectPropertiesSection.BindObjectPropertiesSection.createPropertyValueWithCustomSupport(
+                    modelValue, Boolean(exceptionDetails), false /* showPreview */, titleElement!, this._linkifier);
+            titleElement?.removeChild(this._valueElement);
+            this._valueElement = propertyValue.element;
+            titleElement?.appendChild(this._valueElement);
+        }
+    }
+
+    _createBindModelTreeElement(modelValue?: SDK.RemoteObject.RemoteObject, exceptionDetails?: Protocol.Runtime.ExceptionDetails): void {
+        const headerElement = this._createBindModelHeader(modelValue, exceptionDetails);
+
+        if (!exceptionDetails && modelValue && modelValue.hasChildren && !modelValue.customPreview()) {
             headerElement.classList.add('watch-expression-object-header');
-            this._treeElement = new ObjectUI.ObjectPropertiesSection.RootElement(expressionValue, this._linkifier);
-            this._expandController.watchSection(
-                (this._expression as string), (this._treeElement as ObjectUI.ObjectPropertiesSection.RootElement));
+            this._treeElement = new ObjectUI.BindObjectPropertiesSection.RootElement(this._modelName, modelValue, this._linkifier);
+            this._expandController.watchSection(this._modelName as string, this._treeElement);
             this._treeElement.toggleOnClick = false;
             this._treeElement.listItemElement.addEventListener('click', this._onSectionClick.bind(this), false);
-            this._treeElement.listItemElement.addEventListener('dblclick', this._dblClickOnWatchExpression.bind(this));
+            // Disabled for now
+            // this._treeElement.listItemElement.addEventListener('dblclick', this._dblClickOnBindModel.bind(this));
         } else {
-            headerElement.addEventListener('dblclick', this._dblClickOnWatchExpression.bind(this));
-            this._treeElement = new UI.TreeOutline.TreeElement();
+            // Disabled for now
+            // headerElement.addEventListener('dblclick', this._dblClickOnBindModel.bind(this));
+            this._treeElement = new ObjectUI.BindObjectPropertiesSection.RootElement(this._modelName, modelValue);
         }
         this._treeElement.title = this._element;
         this._treeElement.listItemElement.classList.add('watch-expression-tree-item');
-        this._treeElement.listItemElement.addEventListener('keydown', event => {
-            if (event.key === 'Enter' && !this.isEditing()) {
-                this.startEditing();
-                event.consume(true);
-            }
-        });
+
+        // Disabled for now
+        // this._treeElement.listItemElement.addEventListener('keydown', event => {
+        //     if (event.key === 'Enter' && !this.isEditing()) {
+        //         this.startEditing();
+        //         event.consume(true);
+        //     }
+        // });
+    }
+
+    _updateBindModelTreeElement(modelValue?: SDK.RemoteObject.RemoteObject, exceptionDetails?: Protocol.Runtime.ExceptionDetails): void {
+        this._updateBindModelHeader(modelValue, exceptionDetails);
+
+        this._treeElement.update(this._modelName, modelValue);
+        if (!exceptionDetails && modelValue && modelValue.hasChildren && !modelValue.customPreview()) {
+            this._expandController.watchSection(this._modelName as string, this._treeElement);
+        }
     }
 
     _onSectionClick(event: Event): void {
         event.consume(true);
-        const mouseEvent = (event as MouseEvent);
-        if (mouseEvent.detail === 1) {
-            this._preventClickTimeout = window.setTimeout(handleClick.bind(this), 333);
-        } else if (this._preventClickTimeout !== undefined) {
-            window.clearTimeout(this._preventClickTimeout);
-            this._preventClickTimeout = undefined;
+        if (!this._treeElement) {
+            return;
         }
 
-        function handleClick(this: WatchExpression): void {
-            if (!this._treeElement) {
-                return;
-            }
-
-            if (this._treeElement.expanded) {
-                this._treeElement.collapse();
-            } else if (!this._editing) {
-                this._treeElement.expand();
-            }
+        if (this._treeElement.expanded) {
+            this._treeElement.collapse();
+        } else if (!this._editing) {
+            this._treeElement.expand();
         }
+
+        // Disabled for now
+        // const mouseEvent = (event as MouseEvent);
+        // if (mouseEvent.detail === 1) {
+        //     this._preventClickTimeout = window.setTimeout(handleClick.bind(this), 333);
+        // } else if (this._preventClickTimeout !== undefined) {
+        //     window.clearTimeout(this._preventClickTimeout);
+        //     this._preventClickTimeout = undefined;
+        // }
+
+        // function handleClick(this: BindModel): void {
+        //     if (!this._treeElement) {
+        //         return;
+        //     }
+
+        //     if (this._treeElement.expanded) {
+        //         this._treeElement.collapse();
+        //     } else if (!this._editing) {
+        //         this._treeElement.expand();
+        //     }
+        // }
     }
 
-    _promptKeyDown(event: KeyboardEvent): void {
-        if (event.key === 'Enter' || isEscKey(event)) {
-            this._finishEditing(event, isEscKey(event));
-        }
-    }
+    // Disabled for now
+    // _promptKeyDown(event: KeyboardEvent): void {
+    //     if (event.key === 'Enter' || isEscKey(event)) {
+    //         this._finishEditing(event, isEscKey(event));
+    //     }
+    // }
 
     _populateContextMenu(contextMenu: UI.ContextMenu.ContextMenu, event: Event): void {
-        if (!this.isEditing()) {
-            contextMenu.editSection().appendItem(
-                i18nString(UIStrings.deleteWatchExpression), this._updateExpression.bind(this, null));
-        }
+        // Disabled for now
+        // if (!this.isEditing()) {
+        //     contextMenu.editSection().appendItem(
+        //         i18nString(UIStrings.deletModel), this._updateModel.bind(this, BindModelActions.DELETE, null));
+        // }
 
         if (!this.isEditing() && this._result && (this._result.type === 'number' || this._result.type === 'string')) {
             contextMenu.clipboardSection().appendItem(
@@ -564,13 +817,13 @@ export class WatchExpression extends Common.ObjectWrapper.ObjectWrapper {
         Host.InspectorFrontendHost.InspectorFrontendHostInstance.copyText(this._valueElement.textContent);
     }
 
-    private static readonly watchObjectGroupId = 'watch-group';
+    public static readonly watchObjectGroupId = 'watch-group';
 }
 
-export namespace WatchExpression {
+export namespace BindModel {
     // TODO(crbug.com/1167717): Make this a const enum again
     // eslint-disable-next-line rulesdir/const_enum
     export const Events = {
-        ExpressionUpdated: Symbol('ExpressionUpdated'),
+        ModelUpdated: Symbol('ModelUpdated'),
     };
 }

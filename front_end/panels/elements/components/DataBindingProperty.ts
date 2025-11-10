@@ -302,7 +302,7 @@ export class DataBindAttributeTreeElement extends DataBindBaseTreeElement {
 
       for (let i = 0; i < evalNodes.length; i++) {
         const { evaluatableExpression, evaluatedValue, evaluationError, syncStatus, valueType } = evalNodes[i];
-        if (!!evaluationError) nodeHasError = true;
+        if (evaluationError) nodeHasError = true;
         if (!syncStatus) nodeHasWarning = true;
 
         if (!this.dataBindNodeElements[i]) {

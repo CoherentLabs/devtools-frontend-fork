@@ -83,7 +83,7 @@ const DEFAULT_WATCH_INTERVAL = 2000;
 // }
 
 export class DataBindingModelsPanelView extends UI.ThrottledWidget.ThrottledWidget implements
-    UI.ActionRegistration.ActionDelegate, UI.Toolbar.ItemsProvider, UI.ContextMenu.Provider {
+    UI.Toolbar.ItemsProvider, UI.Toolbar.WrappableProvider {
     _emptyElement!: HTMLElement;
     _bindModels: BindModel[];
     _bindModelsSetting: Common.Settings.Setting<string[]>;
@@ -111,7 +111,7 @@ export class DataBindingModelsPanelView extends UI.ThrottledWidget.ThrottledWidg
         this._bindModels = [];
         this._bindModelsSetting =
             Common.Settings.Settings.instance().createLocalSetting<string[]>('dataBindingModels', []);
-        this._bindModelsSetting.set([])
+        this._bindModelsSetting.set([]);
         this.contentElement.classList.add('watch-expressions');
         this.contentElement.addEventListener('contextmenu', this._contextMenu.bind(this), false);
         this._treeOutline = new ObjectUI.BindObjectPropertiesSection.ObjectPropertiesSectionsTreeOutline();
@@ -200,22 +200,23 @@ export class DataBindingModelsPanelView extends UI.ThrottledWidget.ThrottledWidg
         this._toolbarItems.push(new UI.Toolbar.ToolbarSettingCheckbox(
             this._autoUpdateBindModelsSetting, i18nString(UIStrings.autoUpdateBindModels), i18nString(UIStrings.watchForModelChanges)));
 
-        this._intervalInput = document.createElement('input') as HTMLInputElement;
-        this._intervalInput.setAttribute('type', 'number');
-        this._intervalInput.setAttribute('inputmode', 'numeric')
-        this._intervalInput.setAttribute('pattern', '\d*')
-        this._intervalInput.classList.add('update-models-interval-input');
+        this._intervalInput = Object.assign(document.createElement('input') as HTMLInputElement, {
+            type: 'number',
+            inputMode: 'numeric',
+            pattern: '\\d*',
+            className: 'update-models-interval-input',
+        });
         this._intervalInput.addEventListener('blur', this.handleWatchIntervalChange.bind(this));
         if (!this._watchIntervalValue.get()) {
             this._watchIntervalValue.set(DEFAULT_WATCH_INTERVAL);
-            this._intervalInput.value = DEFAULT_WATCH_INTERVAL + '';
+            this._intervalInput.value = String(DEFAULT_WATCH_INTERVAL);
         } else {
-            this._intervalInput.value = this._watchIntervalValue.get() + '';
+            this._intervalInput.value = String(this._watchIntervalValue.get());
         }
 
         this._inputIntervalWrapper = document.createElement('div');
         this._inputIntervalWrapper.classList.add('hidden');
-        
+
         const inputLabel = document.createElement('span');
         inputLabel.textContent = i18nString(UIStrings.modelChangesIntervalLabel);
         inputLabel.classList.add('update-models-interval-label');
@@ -239,7 +240,7 @@ export class DataBindingModelsPanelView extends UI.ThrottledWidget.ThrottledWidg
 
     handleWatchIntervalChange() {
         if (!this._intervalInput!.value) {
-            this._intervalInput!.value = this._watchIntervalValue.get() + '';
+            this._intervalInput!.value = String(this._watchIntervalValue.get());
             return;
         }
 
@@ -504,14 +505,6 @@ export class DataBindingModelsPanelView extends UI.ThrottledWidget.ThrottledWidg
     //     this._saveModels();
     //     this.update();
     // }
-
-    handleAction(_context: UI.Context.Context, _actionId: string): boolean {
-        return false
-    }
-
-    appendApplicableItems(event: Event, contextMenu: UI.ContextMenu.ContextMenu, target: Object): void {
-        return;
-    }
 }
 
 export class BindModel extends Common.ObjectWrapper.ObjectWrapper {

@@ -363,7 +363,7 @@ export class Size {
   get width() { return this._width }
 
   set width(value: number) {
-    this.width = value;
+    this._width = value;
   }
 
   clipTo(size?: Size|null): Size {

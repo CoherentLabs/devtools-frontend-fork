@@ -61,7 +61,7 @@ export class PopoverHelper {
     this._hidePopoverTimer = null;
     this._showPopoverTimer = null;
     /* COHERENT_BEGIN */
-    this._additionalPopoverCSSFiles = additionalCSSFiles ||[];
+    this._additionalPopoverCSSFiles = additionalCSSFiles || [];
     /* COHERENT_END */
     this._boundMouseDown = this._mouseDown.bind(this);
     this._boundMouseMove = this._mouseMove.bind(this);

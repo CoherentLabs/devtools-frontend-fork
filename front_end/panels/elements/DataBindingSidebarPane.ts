@@ -16,8 +16,8 @@ const UIStrings = {
   fetchDataWarning: 'Unable to fetch data for the selected node',
   expandAllExpressions: 'Expand all the expressions in the tab',
   collapseAllExpressions: 'Collapse all the expressions in the tab',
-  highlightAttibutesSetting: 'Hover bind attributes',
-  highlightAttibutesSettingDescription: 'Show an informative popover when data-bind attribute is hovered in the elements tab and the option is enabled.'
+  highlightAttributesSetting: 'Hover bind attributes',
+  highlightAttributesSettingDescription: 'Show an informative popover when data-bind attribute is hovered in the elements tab and the option is enabled.'
 };
 const str_ = i18n.i18n.registerUIStrings('panels/elements/DataBindingSidebarPane.ts', UIStrings);
 const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
@@ -94,9 +94,9 @@ export class DataBindingSidebarPane extends ElementsSidebarPane {
 
     const highlightBindingAttributesSetting =
       Common.Settings.Settings.instance().moduleSetting('highlightBindingAttributes');
-    highlightBindingAttributesSetting.setTitle(i18nString(UIStrings.highlightAttibutesSetting))
+    highlightBindingAttributesSetting.setTitle(i18nString(UIStrings.highlightAttributesSetting));
     const highlightBindingAttributesBtn =
-      new UI.Toolbar.ToolbarSettingCheckbox(highlightBindingAttributesSetting, i18nString(UIStrings.highlightAttibutesSettingDescription));
+      new UI.Toolbar.ToolbarSettingCheckbox(highlightBindingAttributesSetting, i18nString(UIStrings.highlightAttributesSettingDescription));
     secondToolbar?.appendToolbarItem(highlightBindingAttributesBtn);
   }
 

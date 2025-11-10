@@ -13,6 +13,8 @@
     "computedStyleWidgetTree.css",
     "domLinkifier.css",
     "elementsPanel.css",
+    "dataBindingPanel.css",
+    "dataBindingPanelToolbar.css",
     "elementStatePaneWidget.css",
     "elementsTreeOutline.css",
     "layoutPane.css",
@@ -21,6 +23,7 @@
     "propertiesWidget.css",
     "nodeStackTraceWidget.css",
     "stylesSectionTree.css",
-    "stylesSidebarPane.css"
+    "stylesSidebarPane.css",
+    "components/dataBindingProperty.css"
   ]
 }

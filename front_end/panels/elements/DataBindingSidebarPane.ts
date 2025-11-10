@@ -3,91 +3,227 @@ import * as SDK from '../../core/sdk/sdk.js';
 import * as Common from '../../core/common/common.js';
 import { ElementsSidebarPane } from './ElementsSidebarPane.js';
 import * as ElementsComponents from './components/components.js';
-
+import * as Protocol from '../../generated/protocol.js';
+import * as i18n from '../../core/i18n/i18n.js';
+import * as Platform from '../../core/platform/platform.js';
+import { DataBindAttributeTreeElement } from './components/DataBindingProperty.js';
+import dataBindingPanelToolbarStyles from 'dataBindingPanelToolbar.css.js';
 let dataBindingPanelViewInstance: DataBindingSidebarPane;
+
+const UIStrings = {
+  noSelectedNodeInfo: 'No selected element',
+  noAttributes: 'No data bind attributes for the selected node',
+  fetchDataWarning: 'Unable to fetch data for the selected node',
+  expandAllExpressions: 'Expand all the expressions in the tab',
+  collapseAllExpressions: 'Collapse all the expressions in the tab'
+};
+const str_ = i18n.i18n.registerUIStrings('panels/elements/DataBindingSidebarPane.ts', UIStrings);
+const i18nString = i18n.i18n.getLocalizedString.bind(undefined, str_);
 
 export class DataBindingSidebarPane extends ElementsSidebarPane {
   private dataBindingsPanel: HTMLElement;
-  private selectedNode: HTMLElement;
   private treeOutline: UI.TreeOutline.TreeOutline;
-  private bindingAttributes: SDK.DOMModel.Attribute[]
+  private treeElement: HTMLElement;
+  private bindingAttributes: DataBindAttributeTreeElement[] = []
+  private readonly noSelectedNodeInfo: Element;
+  private readonly noAttributesInfo: Element;
+  private readonly fetchDataWarning: Element;
+  private activeWarningMessage: Element | null = null;
+  private filterRegex: RegExp | null = null;
+  private toolbar: UI.Toolbar.Toolbar | null = null;
 
   constructor() {
     super(true);
-    this.bindingAttributes = [];
+    this.createToolbar();
 
     UI.Context.Context.instance().addFlavorChangeListener(SDK.DOMModel.DOMNode, this.doUpdate, this);
     SDK.TargetManager.TargetManager.instance().addModelListener(
-      SDK.DOMModel.DOMModel, SDK.DOMModel.Events.DocumentUpdated, this._documentUpdatedEvent, this);
+      SDK.DOMModel.DOMModel, SDK.DOMModel.Events.DataBindingModelsSynchronized, this.doUpdate, this);
+    SDK.TargetManager.TargetManager.instance().addModelListener(
+      SDK.DOMModel.DOMModel, SDK.DOMModel.Events.AttrModified, this.onAttributeModified, this);
 
+    this.noSelectedNodeInfo = this.createInfo(i18nString(UIStrings.noSelectedNodeInfo), 'hidden gray-info-message');
+    this.noAttributesInfo = this.createInfo(i18nString(UIStrings.noAttributes), 'hidden gray-info-message');
+    this.fetchDataWarning = this.createWarning(i18nString(UIStrings.fetchDataWarning), 'hidden gray-info-message');
     this.contentElement.classList.add('data-binding-panel-base');
     this.dataBindingsPanel = this.contentElement.createChild('div', 'data-bindings-panel');
     this.dataBindingsPanel.style.width = `100%`;
-    this.selectedNode = document.createElement('div');
-    // @ts-ignore
-    this.selectedNode.style = "display:flex; flex-direction:column;"
-    this.dataBindingsPanel.appendChild(this.selectedNode);
 
-    const treeElement = this.contentElement.createChild('div', 'bind-tree');
+    this.treeElement = this.contentElement.createChild('div', 'bind-tree');
     this.treeOutline = new UI.TreeOutline.TreeOutlineInShadow();
     this.treeOutline.contentElement.classList.add('tree-outline');
+    this.registerRequiredCSS('panels/elements/components/dataBindingProperty.css');
     this.registerRequiredCSS('ui/legacy/treeoutline.css');
     this.registerRequiredCSS('ui/legacy/components/object_ui/objectValue.css');
     this.registerRequiredCSS('ui/legacy/components/object_ui/objectPropertiesSection.css');
-    treeElement.appendChild(this.treeOutline.contentElement);
+    this.registerRequiredCSS('panels/elements/dataBindingPanel.css');
+    this.treeElement.appendChild(this.treeOutline.contentElement);
 
-    this.populateTree();
     this.doUpdate();
   }
 
-  populateTree() {
-    this.treeOutline.removeChildren();
+  createArrowIcon(className: string) {
+    const icon = document.createElement('span');
+    icon.className = className;
+    icon.textContent = "\A0\A0";
+    return icon;
+  }
 
-    this.bindingAttributes.forEach((attr) => {
-      const propTree = new ElementsComponents.DataBindingProperty.DataBindPropertyTreeElement(
-        {
-          attributeName: attr.name,
-          attributeValue: attr.value,
-          mutators: [{
-            evaluationNodes: [
-              { evaluatableExpression: '{{value}}', evaluatedValue: '1', type: 'string' },
-              { evaluatableExpression: '{{value1}}', evaluatedValue: 1, type: 'number' },
-              { evaluatableExpression: '{{value2}}', evaluatedValue: { test: 1, test2: { test3: ['1', undefined, false, 2, ['3'], { 4: '5', test: [{ 1: { 5: [3, { 6: 7 }] } }] }] } }, type: 'object' },
-              { evaluatableExpression: '{{value3}}', evaluatedValue: ["test", "test2"], type: 'array' },
-              { evaluatableExpression: '{{value4}}', evaluatedValue: undefined, type: 'undefined' },
-              { evaluatableExpression: '{{value4}}', evaluatedValue: true, type: 'boolean' },
-            ]
-          }]
-        }
-      );
-      propTree.setExpandable(true);
-      this.treeOutline.appendChild(propTree);
+  createToolbar() {
+    this.toolbar = new UI.Toolbar.Toolbar('', this.contentElement);
+    this.toolbar._shadowRoot.adoptedStyleSheets = [...this.toolbar._shadowRoot.adoptedStyleSheets, dataBindingPanelToolbarStyles];
+
+    const filterInput = this.createFilterElement(this.onFilterChange.bind(this));
+    this.toolbar?.appendToolbarItem(filterInput);
+
+    const expandIcon = this.createArrowIcon('expand-tree-icon');
+    const expandAllBtn =
+      new UI.Toolbar.ToolbarButton(i18nString(UIStrings.expandAllExpressions), expandIcon);
+    expandAllBtn.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, this.expandTree.bind(this), this);
+    this.toolbar?.appendToolbarItem(expandAllBtn);
+
+    const collapseIcon = this.createArrowIcon('collapse-tree-icon');
+    const collapseAllBtn =
+      new UI.Toolbar.ToolbarButton(i18nString(UIStrings.collapseAllExpressions), collapseIcon);
+    collapseAllBtn.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, this.collapseTree.bind(this), this);
+    this.toolbar?.appendToolbarItem(collapseAllBtn);
+  }
+
+  onFilterChange(value: RegExp | null) {
+    this.bindingAttributes.forEach((attribute) => {
+      const mutatorsVisible = attribute.filterMutators(value);
+      if (mutatorsVisible) return attribute.toggleTreeElement(true);
+
+      const attributeVisible = value ? attribute.attributeData?.attributeName.match(value) || attribute.attributeData?.attributeValue.match(value) : true;
+      attribute.toggleTreeElement(!!attributeVisible);
     })
   }
 
-  _documentUpdatedEvent(event: Common.EventTarget.EventTargetEvent<SDK.DOMModel.DOMModel>): void {
-    const domModel = event.data;
+  createFilterElement(filterCallback: (arg0: RegExp | null) => void): UI.Toolbar.ToolbarItem {
+    const input = document.createElement('input');
+    input.type = 'search';
+    input.classList.add('filter-bindings-input');
+    input.placeholder = 'Filter';
+
+    const searchHandler = (): void => {
+      const regex = input.value ? new RegExp(Platform.StringUtilities.escapeForRegExp(input.value), 'i') : null;
+      this.filterRegex = regex;
+      filterCallback(regex);
+    }
+
+    input.addEventListener('input', searchHandler, false);
+
+    function keydownHandler(event: Event): void {
+      const keyboardEvent = (event as KeyboardEvent);
+      if (keyboardEvent.key !== Platform.KeyboardUtilities.ESCAPE_KEY || !input.value) {
+        return;
+      }
+      keyboardEvent.consume(true);
+      input.value = '';
+      searchHandler();
+    }
+    input.addEventListener('keydown', keydownHandler, false);
+
+    return new UI.Toolbar.ToolbarItem(input);
+  }
+
+  expandTree(event: Common.EventTarget.EventTargetEvent<Event>) {
+    this.bindingAttributes.forEach((attribute) => attribute.expandRecursively());
+  }
+
+  collapseTree(event: Common.EventTarget.EventTargetEvent<Event>) {
+    this.bindingAttributes.forEach((attribute) => attribute.collapseRecursively());
+  }
+
+  createInfo(textContent: string, className?: string): Element {
+    const classNameOrDefault = className || 'gray-info-message';
+    const info = this.contentElement.createChild('div', classNameOrDefault);
+    info.textContent = textContent;
+    return info;
+  }
+
+  createWarning(textContent: string, className?: string): Element {
+    const classNameOrDefault = className || 'gray-info-message';
+    const warn = this.contentElement.createChild('div', classNameOrDefault);
+    const warnMark = this.createExclamationMark('');
+    warn.appendChild(warnMark);
+    const text = warn.createChild('span');
+    text.textContent = textContent;
+    return warn;
+  }
+
+  createExclamationMark(tooltip: string): Element {
+    const exclamationElement = document.createElement('span', { is: 'dt-icon-label' }) as UI.UIUtils.DevToolsIconLabel;
+    exclamationElement.type = 'smallicon-warning';
+    UI.Tooltip.Tooltip.install(exclamationElement, tooltip);
+    return exclamationElement;
+  }
+
+  populateTree(data: Protocol.DOM.DataBindAttributeData[], domModel: SDK.DOMModel.DOMModel | undefined) {
+    this.hideMessages();
+    this.treeElement.classList.toggle('hidden', false);
+    const runtimeModel = domModel?.runtimeModel();
+    const executionContext = runtimeModel?.executionContexts()[0];
+
+    for (let i = 0; i < data.length; i++) {
+      if (!this.bindingAttributes[i]) {
+        const attrTree = new ElementsComponents.DataBindingProperty.DataBindAttributeTreeElement(data[i], executionContext);
+        attrTree.setExpandable(true);
+        attrTree.selectable = false;
+        attrTree.expand();
+
+        this.treeOutline.appendChild(attrTree);
+        this.bindingAttributes.push(attrTree);
+      } else {
+        this.bindingAttributes[i].update(data[i]);
+      }
+
+      this.bindingAttributes[i].resetTimers();
+    }
+
+    if (this.bindingAttributes.length > data.length) {
+      for (let i = data.length; i < this.bindingAttributes.length; i++) {
+        this.bindingAttributes[i].stopTimers();
+        this.treeOutline.removeChild(this.bindingAttributes[i]);
+      }
+
+      this.bindingAttributes.splice(data.length, this.bindingAttributes.length);
+    }
+  }
+
+  onAttributeModified(event: Common.EventTarget.EventTargetEvent<{ node: SDK.DOMModel.DOMNode, name: string }>): void {
+    const { node } = event.data;
+
+    if (node.id === this.node()?.id) {
+      this.doUpdate();
+    }
+  }
+
+  showMessage(messageElement: Element) {
+    this.activeWarningMessage?.classList.toggle('hidden', true);
+    this.activeWarningMessage = messageElement;
+    this.activeWarningMessage.classList.toggle('hidden', false);
+    this.treeElement.classList.toggle('hidden', true);
+    this.bindingAttributes.forEach((attr) => {
+      attr.stopTimers();
+    })
+  }
+
+  hideMessages() {
+    this.activeWarningMessage?.classList.toggle('hidden', true);
   }
 
   async doUpdate(): Promise<void> {
-    if (!this.node()) {
-      this.selectedNode.textContent = 'No node selected';
-      return;
-    }
-    const attr = this.node()?.attributes();
-    this.bindingAttributes = attr?.filter((attr) => attr.name.startsWith('data-bind') || attr.name.startsWith('data-meta-for')) || [];
+    if (!this.node()) return this.showMessage(this.noSelectedNodeInfo);
+    const domModel = this.node()?.domModel();
+    const data = await domModel?.getDataBindingDataForNode(this.node()!.id);
+    if (!data) return this.showMessage(this.fetchDataWarning);
 
-    this.selectedNode.innerHTML = `<div>Selected: ${this.node()?.nodeName()} with id ${this.node()?.backendNodeId()}</div>`;
-    this.populateTree();
-  }
+    const attributes = data?.dataBindAttributes || [];
+    if (!attributes.length) return this.showMessage(this.noAttributesInfo);
 
-  modelAdded(domModel: SDK.DOMModel.DOMModel): void {
-    const parentModel = domModel.parentModel();
-    this.selectedNode.textContent = 'Model';
-  }
-
-  modelRemoved(domModel: SDK.DOMModel.DOMModel): void {
-
+    this.populateTree(attributes, domModel);
+    if (this.filterRegex) this.onFilterChange(this.filterRegex);
   }
 
   static instance(opts: {

@@ -380,8 +380,8 @@ export class ContainerWidget extends VBox {
         toolbarComponent = toolbar;
       }
     }));
-    promises.push(this._view.toolbarWrappable?.().then(toobarWrappable => {
-      if(toolbarComponent) toolbarComponent.makeWrappable(toobarWrappable);
+    promises.push(this._view.toolbarWrappable?.().then(toolbarWrappable => {
+      if (toolbarComponent) toolbarComponent.makeWrappable(toolbarWrappable);
     }));
     promises.push(this._view.widget().then(widget => {
       // Move focus from |this| to loaded |widget| if any.
@@ -472,8 +472,8 @@ export class _ExpandableContainerWidget extends VBox {
         toolbarComponent = toolbar;
       }
     }));
-    promises.push(this._view.toolbarWrappable?.().then(toobarWrappable => {
-      if (toolbarComponent) toolbarComponent.makeWrappable(toobarWrappable);
+    promises.push(this._view.toolbarWrappable?.().then(toolbarWrappable => {
+      if (toolbarComponent) toolbarComponent.makeWrappable(toolbarWrappable);
     }));
     promises.push(this._view.widget().then(widget => {
       this._widget = widget;

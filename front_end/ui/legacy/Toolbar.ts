@@ -873,6 +873,10 @@ export interface ItemsProvider {
   toolbarItems(): ToolbarItem[];
 }
 
+export interface WrappableProvider {
+  toolbarWrappable(): boolean;
+}
+
 export class ToolbarComboBox extends ToolbarItem<void> {
   _selectElement: HTMLSelectElement;
 

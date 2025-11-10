@@ -187,8 +187,11 @@ export class BindObjectPropertiesSection extends UI.TreeOutline.TreeOutlineInSha
     // COHERENT_BEGIN
     modelName: string,
     // COHERENT_END
-    object: SDK.RemoteObject.RemoteObject, linkifier?: Components.Linkifier.Linkifier, skipProto?: boolean,
-    readOnly?: boolean): Element {
+    object: SDK.RemoteObject.RemoteObject,
+    linkifier?: Components.Linkifier.Linkifier,
+    skipProto?: boolean,
+    readOnly?: boolean
+  ): Element {
     const objectPropertiesSection =
       // COHERENT_BEGIN
       BindObjectPropertiesSection.defaultObjectPropertiesSection(modelName, object, linkifier, skipProto, readOnly);
@@ -203,9 +206,12 @@ export class BindObjectPropertiesSection extends UI.TreeOutline.TreeOutlineInSha
     // COHERENT_BEGIN
     modelName: string,
     // COHERENT_END
-    object: SDK.RemoteObject.RemoteObject, linkifier?: Components.Linkifier.Linkifier, skipProto?: boolean,
+    object: SDK.RemoteObject.RemoteObject,
+    linkifier?: Components.Linkifier.Linkifier,
+    skipProto?: boolean,
     // COHERENT_BEGIN
-    readOnly?: boolean): BindObjectPropertiesSection {
+    readOnly?: boolean
+  ): BindObjectPropertiesSection {
     // COHERENT_END
     const titleElement = document.createElement('span');
     titleElement.classList.add('source-code');
@@ -214,7 +220,7 @@ export class BindObjectPropertiesSection extends UI.TreeOutline.TreeOutlineInSha
       delegatesFocus: undefined,
     });
     const propertyValue =
-    // COHERENT_BEGIN
+      // COHERENT_BEGIN
       BindObjectPropertiesSection.createPropertyValue(object, /* wasThrown */ false, /* showPreview */ true);
     // COHERENT_END
     shadowRoot.appendChild(propertyValue.element);
@@ -233,7 +239,9 @@ export class BindObjectPropertiesSection extends UI.TreeOutline.TreeOutlineInSha
   }
 
   static compareProperties(
-    propertyA: SDK.RemoteObject.RemoteObjectProperty, propertyB: SDK.RemoteObject.RemoteObjectProperty): number {
+    propertyA: SDK.RemoteObject.RemoteObjectProperty,
+    propertyB: SDK.RemoteObject.RemoteObjectProperty
+  ): number {
     if (!propertyA.synthetic && propertyB.synthetic) {
       return 1;
     }
@@ -299,8 +307,7 @@ export class BindObjectPropertiesSection extends UI.TreeOutline.TreeOutlineInSha
   }
   // COHERENT_END
 
-  static valueElementForFunctionDescription(description?: string | null, includePreview?: boolean, defaultName?: string):
-    Element {
+  static valueElementForFunctionDescription(description?: string | null, includePreview?: boolean, defaultName?: string): Element {
     const valueElement = document.createElement('span');
     valueElement.classList.add('object-value-function');
     description = description || '';
@@ -382,8 +389,12 @@ export class BindObjectPropertiesSection extends UI.TreeOutline.TreeOutlineInSha
   }
 
   static createPropertyValueWithCustomSupport(
-    value: SDK.RemoteObject.RemoteObject, wasThrown: boolean, showPreview: boolean, parentElement?: Element,
-    linkifier?: Components.Linkifier.Linkifier): ObjectPropertyValue {
+    value: SDK.RemoteObject.RemoteObject,
+    wasThrown: boolean,
+    showPreview: boolean,
+    parentElement?: Element,
+    linkifier?: Components.Linkifier.Linkifier
+  ): ObjectPropertyValue {
     if (value.customPreview()) {
       const result = (new CustomPreviewComponent(value)).element;
       result.classList.add('object-properties-section-custom-section');
@@ -421,8 +432,12 @@ export class BindObjectPropertiesSection extends UI.TreeOutline.TreeOutlineInSha
   }
 
   static createPropertyValue(
-    value: SDK.RemoteObject.RemoteObject, wasThrown: boolean, showPreview: boolean, parentElement?: Element,
-    linkifier?: Components.Linkifier.Linkifier): ObjectPropertyValue {
+    value: SDK.RemoteObject.RemoteObject,
+    wasThrown: boolean,
+    showPreview: boolean,
+    parentElement?: Element,
+    linkifier?: Components.Linkifier.Linkifier
+  ): ObjectPropertyValue {
     let propertyValue;
     const type = value.type;
     const subtype = value.subtype;
@@ -532,8 +547,11 @@ export class BindObjectPropertiesSection extends UI.TreeOutline.TreeOutlineInSha
   }
 
   static formatObjectAsFunction(
-    func: SDK.RemoteObject.RemoteObject, element: Element, linkify: boolean,
-    includePreview?: boolean): Promise<void> {
+    func: SDK.RemoteObject.RemoteObject,
+    element: Element,
+    linkify: boolean,
+    includePreview?: boolean
+  ): Promise<void> {
     return func.debuggerModel().functionDetailsPromise(func).then(didGetDetails);
 
     function didGetDetails(response: SDK.DebuggerModel.FunctionDetails | null): void {
@@ -560,7 +578,8 @@ export class BindObjectPropertiesSection extends UI.TreeOutline.TreeOutlineInSha
 
   static isDisplayableProperty(
     property: SDK.RemoteObject.RemoteObjectProperty,
-    parentProperty?: SDK.RemoteObject.RemoteObjectProperty): boolean {
+    parentProperty?: SDK.RemoteObject.RemoteObjectProperty
+  ): boolean {
     if (!parentProperty || !parentProperty.synthetic) {
       return true;
     }
@@ -799,8 +818,11 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
   }
 
   static async populate(
-    treeElement: UI.TreeOutline.TreeElement, value: SDK.RemoteObject.RemoteObject | undefined, skipProto: boolean,
-    linkifier?: Components.Linkifier.Linkifier, emptyPlaceholder?: string | null,
+    treeElement: UI.TreeOutline.TreeElement,
+    value: SDK.RemoteObject.RemoteObject | undefined,
+    skipProto: boolean,
+    linkifier?: Components.Linkifier.Linkifier,
+    emptyPlaceholder?: string | null,
     propertiesMode: ObjectPropertiesMode = ObjectPropertiesMode.OwnAndInternalAndInherited,
     extraProperties?: SDK.RemoteObject.RemoteObjectProperty[],
     targetValue?: SDK.RemoteObject.RemoteObject): Promise<void> {
@@ -829,8 +851,11 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
   }
 
   static async populateInPlace(
-    treeElement: UI.TreeOutline.TreeElement, value: SDK.RemoteObject.RemoteObject | undefined, skipProto: boolean,
-    linkifier?: Components.Linkifier.Linkifier, emptyPlaceholder?: string | null,
+    treeElement: UI.TreeOutline.TreeElement,
+    value: SDK.RemoteObject.RemoteObject | undefined,
+    skipProto: boolean,
+    linkifier?: Components.Linkifier.Linkifier,
+    emptyPlaceholder?: string | null,
     propertiesMode: ObjectPropertiesMode = ObjectPropertiesMode.OwnAndInternalAndInherited,
     extraProperties?: SDK.RemoteObject.RemoteObjectProperty[],
     targetValue?: SDK.RemoteObject.RemoteObject): Promise<void> {
@@ -858,10 +883,15 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
   }
 
   private static async updateOrPopulateProperties(
-    treeElement: UI.TreeOutline.TreeElement, properties: SDK.RemoteObject.RemoteObjectProperty[],
-    internalProperties: SDK.RemoteObject.RemoteObjectProperty[] | null, skipProto: boolean, value: SDK.RemoteObject.RemoteObject,
-    linkifier?: Components.Linkifier.Linkifier, emptyPlaceholder?: string | null,
-    skipGetSet?: boolean): Promise<void> {
+    treeElement: UI.TreeOutline.TreeElement,
+    properties: SDK.RemoteObject.RemoteObjectProperty[],
+    internalProperties: SDK.RemoteObject.RemoteObjectProperty[] | null,
+    skipProto: boolean,
+    value: SDK.RemoteObject.RemoteObject,
+    linkifier?: Components.Linkifier.Linkifier,
+    emptyPlaceholder?: string | null,
+    skipGetSet?: boolean
+  ): Promise<void> {
     internalProperties = internalProperties || [];
 
     const existingChildren = new Map<string, ObjectPropertyTreeElement>();
@@ -922,10 +952,15 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
   // COHERENT_END
 
   static populateWithProperties(
-    treeNode: UI.TreeOutline.TreeElement, properties: SDK.RemoteObject.RemoteObjectProperty[],
-    internalProperties: SDK.RemoteObject.RemoteObjectProperty[] | null, skipProto: boolean,
-    value: SDK.RemoteObject.RemoteObject | null, linkifier?: Components.Linkifier.Linkifier,
-    emptyPlaceholder?: string | null, skipGettersAndSetters?: boolean): void {
+    treeNode: UI.TreeOutline.TreeElement,
+    properties: SDK.RemoteObject.RemoteObjectProperty[],
+    internalProperties: SDK.RemoteObject.RemoteObjectProperty[] | null,
+    skipProto: boolean,
+    value: SDK.RemoteObject.RemoteObject | null,
+    linkifier?: Components.Linkifier.Linkifier,
+    emptyPlaceholder?: string | null,
+    skipGettersAndSetters?: boolean
+  ): void {
     // COHERENT_BEGIN
     properties.sort(BindObjectPropertiesSection.compareProperties);
     // COHERENT_END
@@ -948,7 +983,7 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       // COHERENT_BEGIN
       if (!BindObjectPropertiesSection.isDisplayableProperty(property, (treeNode as any).property)) {
-      // COHERENT_END
+        // COHERENT_END
         continue;
       }
 
@@ -1019,8 +1054,10 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
   // COHERENT_END
 
   static createRemoteObjectAccessorPropertySpan(
-    object: SDK.RemoteObject.RemoteObject | null, propertyPath: string[],
-    callback: (arg0: SDK.RemoteObject.CallFunctionResult) => void): HTMLElement {
+    object: SDK.RemoteObject.RemoteObject | null,
+    propertyPath: string[],
+    callback: (arg0: SDK.RemoteObject.CallFunctionResult) => void
+  ): HTMLElement {
     const rootElement = document.createElement('span');
     const element = rootElement.createChild('span');
     element.textContent = i18nString(UIStrings.dots);
@@ -1117,7 +1154,7 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
     const propertyValue = (this.property.value as SDK.RemoteObject.RemoteObject);
     console.assert(typeof propertyValue !== 'undefined');
     // COHERENT_BEGIN
-      const skipProto = true;
+    const skipProto = true;
     const targetValue = this.property.name !== '[[Prototype]]' ? propertyValue : parentMap.get(this.property);
     if (targetValue) {
       await ObjectPropertyTreeElement.populate(
@@ -1222,7 +1259,7 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
   async updateInPlace(): Promise<void> {
     const propertyValue = this.property.value;
     if (!propertyValue) return;
-  
+
     this.update();
     this.updateExpandable();
     if (this.expanded) await ObjectPropertyTreeElement.populateInPlace(this, propertyValue, true, this.linkifier);
@@ -1276,10 +1313,10 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
 
   update(): void {
     this.nameElement =
-    // COHERENT_BEGIN
+      // COHERENT_BEGIN
       (BindObjectPropertiesSection.createNameElement(this.property.name, this.property.private) as HTMLElement);
     // COHERENT_END
-      if (!this.property.enumerable) {
+    if (!this.property.enumerable) {
       this.nameElement.classList.add('object-properties-section-dimmed');
     }
     if (this.property.synthetic) {
@@ -1349,7 +1386,7 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
       this.parent.nameElement.title :
       // COHERENT_BEGIN
       (this.parent instanceof RootElement ? this.parent.modelName : '');
-      // COHERENT_END
+    // COHERENT_END
 
     if (this.property.private || useDotNotation.test(name)) {
       UI.Tooltip.Tooltip.install(this.nameElement, parentPath ? `${parentPath}.${name}` : name);
@@ -1387,7 +1424,7 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
       contextMenu.viewSection().appendItem(
         // COHERENT_BEGIN
         i18nString(UIStrings.expandRecursively), this.expandRecursively.bind(this, MAX_DEPTH));
-        // COHERENT_END
+      // COHERENT_END
       contextMenu.viewSection().appendItem(i18nString(UIStrings.collapseChildren), this.collapseChildren.bind(this));
     }
     if (this.propertyValue) {
@@ -1584,14 +1621,23 @@ export class ArrayGroupingTreeElement extends UI.TreeOutline.TreeElement {
   }
 
   static async populateArray(
-    treeNode: UI.TreeOutline.TreeElement, object: SDK.RemoteObject.RemoteObject, fromIndex: number, toIndex: number,
-    linkifier?: Components.Linkifier.Linkifier): Promise<void> {
+    treeNode: UI.TreeOutline.TreeElement,
+    object: SDK.RemoteObject.RemoteObject,
+    fromIndex: number,
+    toIndex: number,
+    linkifier?: Components.Linkifier.Linkifier
+  ): Promise<void> {
     await ArrayGroupingTreeElement.populateRanges(treeNode, object, fromIndex, toIndex, true, linkifier);
   }
 
   private static async populateRanges(
-    treeNode: UI.TreeOutline.TreeElement, object: SDK.RemoteObject.RemoteObject, fromIndex: number, toIndex: number,
-    topLevel: boolean, linkifier?: Components.Linkifier.Linkifier): Promise<void> {
+    treeNode: UI.TreeOutline.TreeElement,
+    object: SDK.RemoteObject.RemoteObject,
+    fromIndex: number,
+    toIndex: number,
+    topLevel: boolean,
+    linkifier?: Components.Linkifier.Linkifier
+  ): Promise<void> {
     // The definition of callFunctionJSON expects an unknown, and setting to `any` causes Closure to fail.
     // However, leaving this as unknown also causes TypeScript to fail, so for now we leave this as unchecked.
     // @ts-ignore  TODO(crbug.com/1011811): Fix after Closure is removed.
@@ -1609,11 +1655,16 @@ export class ArrayGroupingTreeElement extends UI.TreeOutline.TreeElement {
      * Note: must declare params as optional.
      */
     function packRanges(
-      this: Object, fromIndex?: number, toIndex?: number, bucketThreshold?: number, sparseIterationThreshold?: number,
-      getOwnPropertyNamesThreshold?: number): {
-        ranges: number[][],
-        skipGetOwnPropertyNames: boolean,
-      } | undefined {
+      this: Object,
+      fromIndex?: number,
+      toIndex?: number,
+      bucketThreshold?: number,
+      sparseIterationThreshold?: number,
+      getOwnPropertyNamesThreshold?: number
+    ): {
+      ranges: number[][],
+      skipGetOwnPropertyNames: boolean,
+    } | undefined {
       if (fromIndex === undefined || toIndex === undefined || sparseIterationThreshold === undefined ||
         getOwnPropertyNamesThreshold === undefined || bucketThreshold === undefined) {
         return;
@@ -1731,8 +1782,13 @@ export class ArrayGroupingTreeElement extends UI.TreeOutline.TreeElement {
   }
 
   private static async populateAsFragment(
-    this: ArrayGroupingTreeElement, treeNode: UI.TreeOutline.TreeElement, object: SDK.RemoteObject.RemoteObject,
-    fromIndex: number, toIndex: number, linkifier?: Components.Linkifier.Linkifier): Promise<void> {
+    this: ArrayGroupingTreeElement,
+    treeNode: UI.TreeOutline.TreeElement,
+    object: SDK.RemoteObject.RemoteObject,
+    fromIndex: number,
+    toIndex: number,
+    linkifier?: Components.Linkifier.Linkifier
+  ): Promise<void> {
     // The definition of callFunction expects an unknown, and setting to `any` causes Closure to fail.
     // However, leaving this as unknown also causes TypeScript to fail, so for now we leave this as unchecked.
     const result = await object.callFunction(
@@ -1794,8 +1850,12 @@ export class ArrayGroupingTreeElement extends UI.TreeOutline.TreeElement {
   }
 
   private static async populateNonIndexProperties(
-    this: ArrayGroupingTreeElement, treeNode: UI.TreeOutline.TreeElement, object: SDK.RemoteObject.RemoteObject,
-    skipGetOwnPropertyNames: boolean, linkifier?: Components.Linkifier.Linkifier): Promise<void> {
+    this: ArrayGroupingTreeElement,
+    treeNode: UI.TreeOutline.TreeElement,
+    object: SDK.RemoteObject.RemoteObject,
+    skipGetOwnPropertyNames: boolean,
+    linkifier?: Components.Linkifier.Linkifier
+  ): Promise<void> {
     // The definition of callFunction expects an unknown, and setting to `any` causes Closure to fail.
     // However, leaving this as unknown also causes TypeScript to fail, so for now we leave this as unchecked.
     // @ts-ignore  TODO(crbug.com/1011811): Fix after Closure is removed.
@@ -1818,7 +1878,7 @@ export class ArrayGroupingTreeElement extends UI.TreeOutline.TreeElement {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       // COHERENT_BEGIN
       if (!BindObjectPropertiesSection.isDisplayableProperty(property, (treeNode as any).property)) {
-      // COHERENT_END
+        // COHERENT_END
         continue;
       }
       const childTreeElement = new ObjectPropertyTreeElement(property, linkifier);

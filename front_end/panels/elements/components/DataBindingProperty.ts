@@ -8,7 +8,6 @@ const UIStrings = {
   noErrors: 'No errors',
   outOfSync: 'Out of sync',
   upToDate: 'Up to date',
-  status: 'Status',
   evalError: 'Evaluation errors'
 };
 
@@ -68,31 +67,19 @@ export class DataBindBaseTreeElement extends UI.TreeOutline.TreeElement {
 }
 
 export class DataBindNodeInfoTreeElement extends DataBindBaseTreeElement {
-  private syncStatusElement: HTMLSpanElement | null = null;
   private evaluationErrorElement: HTMLSpanElement | null = null;
-  public syncStatus?: boolean;
   public evaluationError?: string;
-  constructor(evaluationError: string | undefined, syncStatus: boolean) {
+  constructor(evaluationError: string | undefined) {
     super();
     this.listItemElement.classList.add('monospace');
     this.listItemElement.classList.add('expressions-info');
     this.setExpandable(false);
     this.selectable = false;
     this.createElements();
-    this.update(evaluationError, syncStatus);
+    this.update(evaluationError);
   }
 
-  updateStatus(syncStatus: boolean) {
-    if (syncStatus !== this.syncStatus) {
-      this.syncStatusElement!.textContent = syncStatus ? i18nString(UIStrings.upToDate) : i18nString(UIStrings.outOfSync);
-      this.syncStatusElement?.classList.toggle('status-ok', syncStatus);
-      this.syncStatusElement?.classList.toggle('bind-warning-message', !syncStatus);
-    }
-
-    this.syncStatus = syncStatus;
-  }
-
-  update(evaluationError: string | undefined, syncStatus: boolean) {
+  update(evaluationError: string | undefined) {
     if (evaluationError !== this.evaluationError) {
       this.evaluationErrorElement!.textContent = evaluationError ? evaluationError : i18nString(UIStrings.noErrors);
       this.evaluationErrorElement?.classList.toggle('status-ok', !evaluationError);
@@ -100,18 +87,11 @@ export class DataBindNodeInfoTreeElement extends DataBindBaseTreeElement {
     }
 
     this.evaluationError = evaluationError;
-    this.updateStatus(syncStatus);
   }
 
   createElements(): void {
     const wrapper = document.createElement('div');
     wrapper.style.width = '100%';
-    const syncStatusElementWrapper = document.createElement('div');
-    syncStatusElementWrapper.classList.add('bind-expression-status');
-
-    this.appendSpanElement(syncStatusElementWrapper, i18nString(UIStrings.status), 'name');
-    this.appendSeparatorElement(syncStatusElementWrapper);
-    this.syncStatusElement = this.appendSpanElement(syncStatusElementWrapper, i18nString(UIStrings.upToDate), 'status-ok');
 
     const evaluationErrorWrapper = document.createElement('div');
     evaluationErrorWrapper.classList.add('bind-expression-eval-error');
@@ -120,7 +100,6 @@ export class DataBindNodeInfoTreeElement extends DataBindBaseTreeElement {
     this.appendSeparatorElement(evaluationErrorWrapper);
     this.evaluationErrorElement = this.appendSpanElement(evaluationErrorWrapper, i18nString(UIStrings.noErrors), `status-ok`);
 
-    wrapper.appendChild(syncStatusElementWrapper);
     wrapper.appendChild(evaluationErrorWrapper);
     this.listItemElement.appendChild(wrapper);
   }
@@ -133,22 +112,20 @@ export class DataBindNodeTreeElement extends DataBindBaseTreeElement {
   public value?: string;
   public valueType?: string;
   public dataBindNodeInfoTree: DataBindNodeInfoTreeElement;
-  constructor(expression: string, value: string, valueType: string, evaluationError: string | undefined, syncStatus: boolean) {
+  constructor(expression: string, value: string, valueType: string, evaluationError: string | undefined) {
     super();
 
     this.listItemElement.classList.add('monospace');
     this.listItemElement.classList.add('expressions-list');
-    this.dataBindNodeInfoTree = new DataBindNodeInfoTreeElement(evaluationError, syncStatus);
+    this.dataBindNodeInfoTree = new DataBindNodeInfoTreeElement(evaluationError);
 
     this.createElements();
-    this.update(expression, value, valueType, evaluationError, syncStatus);
+    this.update(expression, value, valueType, evaluationError);
   }
 
-  update(expression: string, value: string, valueType: string, evaluationError: string | undefined, syncStatus: boolean) {
+  update(expression: string, value: string, valueType: string, evaluationError: string | undefined) {
     if (!!evaluationError) {
       this.toggleMark(true, 'error', 'Errors generated while evaluating the expression');
-    } else if (!syncStatus) {
-      this.toggleMark(true, 'warning', 'Warnings generated while evaluating the expression');
     } else this.toggleMark(false);
 
     if (expression !== this.expression) this.expressionElement!.textContent = expression;
@@ -161,7 +138,7 @@ export class DataBindNodeTreeElement extends DataBindBaseTreeElement {
     this.value = value;
     this.valueType = valueType;
 
-    this.dataBindNodeInfoTree.update(evaluationError, syncStatus);
+    this.dataBindNodeInfoTree.update(evaluationError);
   }
 
   toggleBindNodeInfoTree(visible: boolean | undefined | null) {
@@ -175,16 +152,12 @@ export class DataBindNodeTreeElement extends DataBindBaseTreeElement {
     this.appendChild(this.dataBindNodeInfoTree);
   }
 }
-
-const EVALUATION_NODE_STATUS_WATCH_INTERVAL = 1000;
-
 export class DataBindAttributeTreeElement extends DataBindBaseTreeElement {
   public attributeData: Protocol.DOM.DataBindAttributeData | null = null;
   private attributeNameElement: HTMLSpanElement;
   private attributeValueElement: HTMLSpanElement;
   private errorsContainerElement: HTMLElement;
   private dataBindNodeElements: DataBindNodeTreeElement[] = []
-  private statusInterval: any;
 
   constructor(attributeData: Protocol.DOM.DataBindAttributeData) {
     super();
@@ -196,78 +169,6 @@ export class DataBindAttributeTreeElement extends DataBindBaseTreeElement {
     this.errorsContainerElement = this.listItemElement.createChild('span', 'bind-error-message mutators', '');
     this.listItemElement.classList.add('monospace');
     this.update(attributeData);
-  }
-
-  async updateNodeStatus(node: DataBindNodeTreeElement) {
-    const exprValue = await this.evalExpression(node.expression!);
-    //@ts-ignore
-    if (!exprValue?.object) return;
-    let currentValue = null;
-    switch (node.valueType) {
-      case 'string':
-      case 'undefined': {
-        currentValue = node.value;
-        break;
-      }
-      default: {
-        currentValue = JSON.parse(node.value!);
-      }
-    }
-    //@ts-ignore
-    const outOfSync = exprValue?.object?.value as unknown !== currentValue;
-    node.dataBindNodeInfoTree.updateStatus(!outOfSync);
-    if (!!node?.dataBindNodeInfoTree?.evaluationError) {
-      node?.toggleMark(true, 'error', 'Errors generated while parsing the attribute');
-    } else if (outOfSync) {
-      node?.toggleMark(true, 'warning', 'Warnings generated while parsing the attribute');
-    } else node?.toggleMark(false);
-
-    return outOfSync;
-  }
-
-  async checkNodesStatus() {
-    // If we have just a single node then the expression is not complex and we can properly update its status with runtime evaluate
-    if (this.dataBindNodeElements.length === 1) {
-      this.updateNodeStatus(this.dataBindNodeElements[0]);
-      return;
-    }
-
-    // If we have more than one node then the first node is the whole complex expression. Then the status of this node is set based on that if all the
-    // other nodes are synchronized or not. If one node is out of sync then the whole expression if out of sync
-    let hasNonSyncStatus = false;
-
-    for (let [index, node] of this.dataBindNodeElements.entries()) {
-      if (index === 0) continue;
-
-      if (await this.updateNodeStatus(node)) hasNonSyncStatus = true;
-    }
-
-    const rootElement = this.dataBindNodeElements[0];
-    rootElement?.dataBindNodeInfoTree?.updateStatus(!hasNonSyncStatus);
-
-    if (!!rootElement?.dataBindNodeInfoTree?.evaluationError) {
-      rootElement?.toggleMark(true, 'error', 'Errors generated while parsing the attribute');
-    } else if (hasNonSyncStatus) {
-      rootElement?.toggleMark(true, 'warning', 'Warnings generated while parsing the attribute');
-    } else rootElement?.toggleMark(false);
-  }
-
-  startTimers() {
-    if (this.statusInterval) return;
-
-    this.statusInterval = setInterval(this.checkNodesStatus.bind(this), EVALUATION_NODE_STATUS_WATCH_INTERVAL)
-  }
-
-  public resetTimers() {
-    this.stopTimers();
-    this.startTimers();
-  }
-
-  public stopTimers() {
-    if (this.statusInterval) {
-      clearInterval(this.statusInterval);
-      this.statusInterval = null;
-    }
   }
 
   public filterMutators(value: RegExp | null): boolean {
@@ -286,7 +187,6 @@ export class DataBindAttributeTreeElement extends DataBindBaseTreeElement {
   private updateMutators(attributeData: Protocol.DOM.DataBindAttributeData) {
     const mutatorsErrors = [] as string[];
     let nodeHasError = false;
-    let nodeHasWarning = false;
 
     for (const mutator of attributeData.mutators) {
       if (mutator.parsingError) {
@@ -301,18 +201,17 @@ export class DataBindAttributeTreeElement extends DataBindBaseTreeElement {
       this.setExpandable(evalNodes.length > 0);
 
       for (let i = 0; i < evalNodes.length; i++) {
-        const { evaluatableExpression, evaluatedValue, evaluationError, syncStatus, valueType } = evalNodes[i];
+        const { evaluatableExpression, evaluatedValue, evaluationError, valueType } = evalNodes[i];
         if (evaluationError) nodeHasError = true;
-        if (!syncStatus) nodeHasWarning = true;
 
         if (!this.dataBindNodeElements[i]) {
-          const node = new DataBindNodeTreeElement(evaluatableExpression, evaluatedValue, valueType, evaluationError, syncStatus);
+          const node = new DataBindNodeTreeElement(evaluatableExpression, evaluatedValue, valueType, evaluationError);
           this.appendChild(node);
           this.dataBindNodeElements[i] = node;
           continue;
         }
 
-        this.dataBindNodeElements[i].update(evaluatableExpression, evaluatedValue, valueType, evaluationError, syncStatus);
+        this.dataBindNodeElements[i].update(evaluatableExpression, evaluatedValue, valueType, evaluationError);
       }
 
       if (this.dataBindNodeElements.length > evalNodes.length) {
@@ -324,9 +223,7 @@ export class DataBindAttributeTreeElement extends DataBindBaseTreeElement {
       }
     }
 
-    if (nodeHasWarning) {
-      this.toggleMark(true, 'warning', 'Warnings generated while parsing the attribute');
-    } else if (nodeHasError || mutatorsErrors.length > 0) {
+    if (nodeHasError || mutatorsErrors.length > 0) {
       this.toggleMark(true, 'error', 'Errors generated while parsing the attribute');
     }
 
@@ -350,6 +247,5 @@ export class DataBindAttributeTreeElement extends DataBindBaseTreeElement {
 
     this.updateMutators(attributeData);
     this.attributeData = attributeData;
-    this.checkNodesStatus();
   }
 }

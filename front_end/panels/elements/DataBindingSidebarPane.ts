@@ -186,13 +186,10 @@ export class DataBindingSidebarPane extends ElementsSidebarPane {
       } else {
         this.bindingAttributes[i].update(data[i]);
       }
-
-      this.bindingAttributes[i].resetTimers();
     }
 
     if (this.bindingAttributes.length > data.length) {
       for (let i = data.length; i < this.bindingAttributes.length; i++) {
-        this.bindingAttributes[i].stopTimers();
         this.treeOutline.removeChild(this.bindingAttributes[i]);
       }
 
@@ -213,9 +210,6 @@ export class DataBindingSidebarPane extends ElementsSidebarPane {
     this.activeWarningMessage = messageElement;
     this.activeWarningMessage.classList.toggle('hidden', false);
     this.treeElement.classList.toggle('hidden', true);
-    this.bindingAttributes.forEach((attr) => {
-      attr.stopTimers();
-    })
   }
 
   hideMessages() {

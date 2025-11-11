@@ -215,7 +215,7 @@ UI.ViewManager.registerViewExtension({
 Common.Settings.registerSettingExtension({
   settingName: 'highlightBindingAttributes',
   settingType: Common.Settings.SettingType.BOOLEAN,
-  defaultValue: false,
+  defaultValue: true,
 });
 
 UI.ViewManager.registerViewExtension({

@@ -1654,7 +1654,7 @@ export class ElementsTreeElement extends UI.TreeOutline.TreeElement {
               const showAttributeError = data?.dataBindAttributes?.find(({ attributeName, mutators }) =>
                 attributeName === attrElement.name &&
                 mutators.find((mutator) => mutator.compilationError || mutator.parsingError ||
-                  mutator.evaluationNodes.find((evalNode) => evalNode.evaluationError))
+                  mutator.evaluationNodes.find((evalNode) => evalNode.evaluationError || evalNode.valueType === 'invalid'))
               );
               attrElement.element.classList.toggle('attribute-error-background', !!showAttributeError);
               attrElement.element.querySelector('.data-attr-error')?.classList.toggle('hidden', !showAttributeError);

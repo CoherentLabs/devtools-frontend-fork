@@ -124,7 +124,7 @@ export class DataBindNodeTreeElement extends DataBindBaseTreeElement {
   }
 
   update(expression: string, value: string, valueType: string, evaluationError: string | undefined) {
-    if (!!evaluationError) {
+    if (!!evaluationError || valueType === 'invalid') {
       this.toggleMark(true, 'error', 'Errors generated while evaluating the expression');
     } else this.toggleMark(false);
 
@@ -137,8 +137,8 @@ export class DataBindNodeTreeElement extends DataBindBaseTreeElement {
     this.expression = expression;
     this.value = value;
     this.valueType = valueType;
-
-    this.dataBindNodeInfoTree.update(evaluationError);
+    const error = evaluationError || (valueType === 'invalid' ? 'Trying to use invalid property' : '');
+    this.dataBindNodeInfoTree.update(error);
   }
 
   toggleBindNodeInfoTree(visible: boolean | undefined | null) {
@@ -188,6 +188,9 @@ export class DataBindAttributeTreeElement extends DataBindBaseTreeElement {
     const mutatorsErrors = [] as string[];
     let nodeHasError = false;
 
+    let currentNodeIndex = 0;
+    let iteratedNodes = 0;
+
     for (const mutator of attributeData.mutators) {
       if (mutator.parsingError) {
         mutatorsErrors.push(mutator.parsingError);
@@ -200,27 +203,27 @@ export class DataBindAttributeTreeElement extends DataBindBaseTreeElement {
       const evalNodes = mutator.evaluationNodes;
       this.setExpandable(evalNodes.length > 0);
 
-      for (let i = 0; i < evalNodes.length; i++) {
-        const { evaluatableExpression, evaluatedValue, evaluationError, valueType } = evalNodes[i];
-        if (evaluationError) nodeHasError = true;
-
-        if (!this.dataBindNodeElements[i]) {
+      for (let j = 0; j < evalNodes.length; j++) {
+        const { evaluatableExpression, evaluatedValue, evaluationError, valueType } = evalNodes[j];
+        if (evaluationError || valueType === 'invalid') nodeHasError = true;
+        iteratedNodes++;
+        if (!this.dataBindNodeElements[currentNodeIndex]) {
           const node = new DataBindNodeTreeElement(evaluatableExpression, evaluatedValue, valueType, evaluationError);
           this.appendChild(node);
-          this.dataBindNodeElements[i] = node;
+          this.dataBindNodeElements[currentNodeIndex++] = node;
           continue;
         }
 
-        this.dataBindNodeElements[i].update(evaluatableExpression, evaluatedValue, valueType, evaluationError);
+        this.dataBindNodeElements[currentNodeIndex++].update(evaluatableExpression, evaluatedValue, valueType, evaluationError);
+      }
+    }
+
+    if (this.dataBindNodeElements.length > iteratedNodes) {
+      for (let i = iteratedNodes; i < this.dataBindNodeElements.length; i++) {
+        this.removeChild(this.dataBindNodeElements[i]);
       }
 
-      if (this.dataBindNodeElements.length > evalNodes.length) {
-        for (let i = evalNodes.length; i < this.dataBindNodeElements.length; i++) {
-          this.removeChild(this.dataBindNodeElements[i]);
-        }
-
-        this.dataBindNodeElements.splice(evalNodes.length, this.dataBindNodeElements.length);
-      }
+      this.dataBindNodeElements.splice(iteratedNodes, this.dataBindNodeElements.length);
     }
 
     if (nodeHasError || mutatorsErrors.length > 0) {

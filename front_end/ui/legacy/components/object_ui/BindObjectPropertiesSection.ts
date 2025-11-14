@@ -122,6 +122,8 @@ const UIStrings = {
   *@description Text for copying
   */
   copy: 'Copy',
+  edit: 'Click to edit',
+  failedToEditModelProperty: "Failed to edit model data. Please verify that the data you're passing to the model is correct. Properties cannot be updated to a value of a different type than the existing one."
 };
 // COHERENT_BEGIN
 const str_ = i18n.i18n.registerUIStrings('ui/legacy/components/object_ui/BindObjectPropertiesSection.ts', UIStrings);
@@ -179,7 +181,7 @@ export class BindObjectPropertiesSection extends UI.TreeOutline.TreeOutlineInSha
 
     objectPropertiesSectionMap.set(this.element, this);
     this.registerRequiredCSS('ui/legacy/components/object_ui/objectValue.css');
-    this.registerRequiredCSS('ui/legacy/components/object_ui/objectPropertiesSection.css');
+    this.registerRequiredCSS('ui/legacy/components/object_ui/objectValue.css');
     this.rootElement().childrenListElement.classList.add('source-code', 'object-properties-section');
   }
 
@@ -647,6 +649,7 @@ export class ObjectPropertiesSectionsTreeOutline extends UI.TreeOutline.TreeOutl
     super();
     this.registerRequiredCSS('ui/legacy/components/object_ui/objectValue.css');
     this.registerRequiredCSS('ui/legacy/components/object_ui/objectPropertiesSection.css');
+    this.registerRequiredCSS('ui/legacy/toolbar.css');
     this.editable = !(options && options.readOnly);
     this.contentElement.classList.add('source-code');
     this.contentElement.classList.add('object-properties-section');
@@ -719,12 +722,14 @@ export class RootElement extends UI.TreeOutline.TreeElement {
 
   onexpand(): void {
     if (this.treeOutline) {
+      this.listItemElement.querySelector('.watch-expression-title .value')?.classList.add('hidden');
       this.treeOutline.element.classList.add('expanded');
     }
   }
 
   oncollapse(): void {
     if (this.treeOutline) {
+      this.listItemElement.querySelector('.watch-expression-title .value')?.classList.remove('hidden');
       this.treeOutline.element.classList.remove('expanded');
     }
   }
@@ -1167,22 +1172,27 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
   }
 
   ondblclick(event: Event): boolean {
-    const target = (event.target as HTMLElement);
-    const inEditableElement = target.isSelfOrDescendant(this.valueElement) ||
-      (this.expandedValueElement && target.isSelfOrDescendant(this.expandedValueElement));
-    if (this.property.value && !this.property.value.customPreview() && inEditableElement &&
-      (this.property.writable || this.property.setter)) {
-      this.startEditing();
-    }
+    // COHERENT_BEGIN
+    // Double-click is now disabled. Use the edit icon instead.
+    // const target = (event.target as HTMLElement);
+    // const inEditableElement = target.isSelfOrDescendant(this.valueElement) ||
+    //   (this.expandedValueElement && target.isSelfOrDescendant(this.expandedValueElement));
+    // if (this.property.value && !this.property.value.customPreview() && inEditableElement &&
+    //   (this.property.writable || this.property.setter)) {
+    //   this.startEditing();
+    // }
     return false;
+    // COHERENT_END
   }
 
   onenter(): boolean {
+    // COHERENT_BEGIN
     if (this.property.value && !this.property.value.customPreview() &&
-      (this.property.writable || this.property.setter)) {
+      (this.property.writable || this.property.setter) && this.isEditableProperty()) {
       this.startEditing();
       return true;
     }
+    // COHERENT_END
     return false;
   }
 
@@ -1214,7 +1224,9 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
     const needsAlternateValue = value.hasChildren && !value.customPreview() && value.subtype !== 'node' &&
       value.type !== 'function' && (value.type !== 'object' || value.preview);
     if (!needsAlternateValue) {
-      return null;
+      const valueElement = document.createElement('span');
+      valueElement.classList.add('value');
+      return valueElement;
     }
 
     const valueElement = document.createElement('span');
@@ -1258,7 +1270,7 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
 
   async updateInPlace(): Promise<void> {
     const propertyValue = this.property.value;
-    if (!propertyValue) return;
+    if (!propertyValue || this.prompt) return;
 
     this.update();
     this.updateExpandable();
@@ -1354,14 +1366,32 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
 
     this.listItemElement.removeChildren();
     let container: Element;
+    let editIcon: UI.Toolbar.ToolbarButton | undefined;
     if (isInternalEntries) {
       container = UI.Fragment.html`<span class='name-and-value'>${this.nameElement}</span>`;
     } else {
       // COHERENT_BEGIN
-      container = UI.Fragment.html`<span class='name-and-value'>${this.nameElement}: ${this.expanded ? this.expandedValueElement : this.valueElement}</span>`;
+      // Add edit icon for editable primitive properties
+      if (this.isEditableProperty()) {
+        const iconSpan = new UI.Toolbar.ToolbarButton(i18nString(UIStrings.edit), 'largeicon-edit');
+        iconSpan.element.classList.add('edit-object-property');
+        iconSpan.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, () => this.startEditing());
+        editIcon = iconSpan;
+      }
+
+      const nameValueSpan = document.createElement('span');
+      nameValueSpan.classList.add('name-and-value');
+      nameValueSpan.appendChild(this.nameElement);
+      nameValueSpan.appendChild(document.createTextNode(': '));
+      const displayElement = this.expanded && this.expandedValueElement ? this.expandedValueElement : this.valueElement;
+      nameValueSpan.appendChild(displayElement);
+      container = nameValueSpan;
       // COHERENT_END
     }
     this.rowContainer = (container as HTMLElement);
+    if (editIcon) {
+      this.listItemElement.appendChild(editIcon.element);
+    }
     this.listItemElement.appendChild(this.rowContainer);
   }
 
@@ -1433,8 +1463,29 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
     contextMenu.show();
   }
 
-  private startEditing(): void {
+  // COHERENT_BEGIN
+  private isEditableProperty(): boolean {
+    // Only allow editing primitive types: string, number, boolean
+    // Deny editing: undefined, null, objects, functions, arrays
+    if (!this.property.value) {
+      return false;
+    }
+
+    const type = this.property.value.type;
+
+    // Allow only string, number, and boolean types
+    if (type === 'string' || type === 'number' || type === 'boolean') {
+      return true;
+    }
+
+    // Deny object, function, and any other types
+    return false;
+  }
+  // COHERENT_END
+
+  private startEditing(e?: Event): void {
     // COHERENT_BEGIN
+    e?.stopPropagation();
     const treeOutline = (this.treeOutline as BindObjectPropertiesSection | null);
     // COHERENT_END
     if (this.prompt || !treeOutline || !treeOutline.editable || this.readOnly) {
@@ -1460,8 +1511,11 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
 
     this.prompt = new ObjectPropertyPrompt();
 
+    // COHERENT_BEGIN
+    // Pass an empty callback - we'll handle blur on the input element instead
     const proxyElement =
-      this.prompt.attachAndStartEditing(this.editableDiv, this.editingCommitted.bind(this, originalContent));
+      this.prompt.attachAndStartEditing(this.editableDiv);
+    // COHERENT_END
     proxyElement.classList.add('property-prompt');
 
     const selection = this.listItemElement.getComponentSelection();
@@ -1469,6 +1523,26 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
     if (selection) {
       selection.selectAllChildren(this.editableDiv);
     }
+
+    // COHERENT_BEGIN
+    // Attach handlers to the actual input element, not the wrapper
+    const inputElement = proxyElement.querySelector('input') || proxyElement.querySelector('[contenteditable]');
+    if (inputElement) {
+      // Prevent mousedown from causing blur by stopping propagation
+      inputElement.addEventListener('mousedown', (event: Event) => {
+        event.stopPropagation();
+      }, false);
+
+      // Prevent click from propagating
+      inputElement.addEventListener('click', (event: Event) => {
+        event.stopPropagation();
+      }, false);
+
+      // Handle blur - only when truly losing focus (clicking outside)
+      inputElement.addEventListener('blur', this.editingCommitted.bind(this, originalContent), false);
+    }
+    // COHERENT_END
+
     proxyElement.addEventListener('keydown', this.promptKeyDown.bind(this, originalContent), false);
   }
 
@@ -1491,13 +1565,13 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
 
   private async editingCommitted(originalContent: string): Promise<void> {
     const userInput = this.prompt ? this.prompt.text() : '';
-    if (userInput === originalContent) {
+    if (userInput === originalContent || userInput === '') {
       this.editingCancelled();  // nothing changed, so cancel
       return;
     }
 
     this.editingEnded();
-    await this.applyExpression(userInput);
+    await this.updateBindModelValue(userInput);
   }
 
   private promptKeyDown(originalContent: string, event: Event): void {
@@ -1515,63 +1589,47 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
   }
 
   // COHERENT_BEGIN
-  private async updateBindModel() {
-    let root = this.parent;
-    while (root && !(root instanceof RootElement)) {
-      root = root.parent;
+  private async updateBindModelValue(value: string) {
+    value = JavaScriptREPL.wrapObjectLiteral(value.trim());
+
+    const domModel = SDK.TargetManager.TargetManager.instance().mainTarget()?.model(SDK.DOMModel.DOMModel)
+    const res = await domModel?.updateDataBindingValue(this.nameElement.title, value);
+    const hasError = res?.getError();
+    const hasSucceeded = res?.succeeded;
+    if (!hasError && hasSucceeded) {
+      let root = this.parent;
+      while (root && !(root instanceof RootElement)) {
+        root = root.parent;
+      }
+
+      if (root) await updateBindModel(root.modelName!);
+      let parsedValue: any;
+      const trimmedValue = value.trim();
+
+      try {
+        parsedValue = JSON.parse(trimmedValue);
+      } catch {
+        if (trimmedValue === 'null') {
+          parsedValue = "null";
+        } else if (trimmedValue === 'undefined') {
+          parsedValue = "undefined";
+        } else if (trimmedValue === 'true') {
+          parsedValue = true;
+        } else if (trimmedValue === 'false') {
+          parsedValue = false;
+        } else {
+          parsedValue = trimmedValue;
+        }
+      }
+
+      this.property.value = SDK.RemoteObject.RemoteObject.fromLocalObject(parsedValue);
+    } else {
+      Common.Console.Console.instance().error(i18nString(UIStrings.failedToEditModelProperty));
     }
 
-    if (root) await updateBindModel(root.modelName!);
+    this.updateInPlace();
   }
   // COHERENT_END
-
-  private async applyExpression(expression: string): Promise<void> {
-    const property = SDK.RemoteObject.RemoteObject.toCallArgument(this.property.symbol || this.property.name);
-    expression = JavaScriptREPL.wrapObjectLiteral(expression.trim());
-
-    if (this.property.synthetic) {
-      let invalidate = false;
-      if (expression) {
-        invalidate = await this.property.setSyntheticValue(expression);
-      }
-      if (invalidate) {
-        const parent = this.parent;
-        if (parent) {
-          parent.invalidateChildren();
-          parent.onpopulate();
-        }
-      } else {
-        this.update();
-      }
-      return;
-    }
-
-    const parentObject = (parentMap.get(this.property) as SDK.RemoteObject.RemoteObject);
-    const errorPromise =
-      expression ? parentObject.setPropertyValue(property, expression) : parentObject.deleteProperty(property);
-    const error = await errorPromise;
-
-    // COHERENT_BEGIN
-    this.updateBindModel();
-    // COHERENT_END
-
-    if (error) {
-      this.update();
-      return;
-    }
-
-    if (!expression) {
-      // The property was deleted, so remove this tree element.
-      this.parent && this.parent.removeChild(this);
-    } else {
-      // Call updateSiblings since their value might be based on the value that just changed.
-      const parent = this.parent;
-      if (parent) {
-        parent.invalidateChildren();
-        parent.onpopulate();
-      }
-    }
-  }
 
   private onInvokeGetterClick(result: SDK.RemoteObject.CallFunctionResult): void {
     if (!result.object) {

@@ -2881,6 +2881,7 @@ declare namespace Protocol {
       QuirksMode = 'QuirksMode',
       LimitedQuirksMode = 'LimitedQuirksMode',
       NoQuirksMode = 'NoQuirksMode',
+      Any = 'any',
     }
 
     /**
@@ -3839,7 +3840,8 @@ declare namespace Protocol {
       modelName?: string;
     }
 
-    export interface GetDataBindingModelsResponse extends ProtocolResponseWithError { }
+    export interface GetDataBindingModelsResponse extends ProtocolResponseWithError {
+    }
 
     export interface GetDataBindingModelNamesResponse extends ProtocolResponseWithError {
       models: string[];
@@ -3848,6 +3850,10 @@ declare namespace Protocol {
     export interface UpdateDataBindingValueRequest {
       path: string;
       newValue: string;
+    }
+
+    export interface UpdateDataBindingValueResponse extends ProtocolResponseWithError {
+      succeeded: boolean;
     }
 
     export interface ImportDataBindingModelsRequest {

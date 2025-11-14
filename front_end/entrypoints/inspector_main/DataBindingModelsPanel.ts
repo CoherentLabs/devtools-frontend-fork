@@ -97,6 +97,7 @@ export class DataBindingModelsPanelView extends UI.ThrottledWidget.ThrottledWidg
     _watchInterval: any;
     _intervalInput: HTMLInputElement | null = null;
     _inputIntervalWrapper: HTMLDivElement | null = null;
+    _hasInitToobarStyles = false;
     private constructor() {
         super(true);
 
@@ -232,10 +233,10 @@ export class DataBindingModelsPanelView extends UI.ThrottledWidget.ThrottledWidg
     }
 
     wasShown(): void {
-        const toolbar = this.parentWidget()?.element.querySelector('.toolbar') as HTMLElement | null;
-        if (!toolbar || !toolbar.shadowRoot) return;
-
-        toolbar.shadowRoot.adoptedStyleSheets = [...toolbar.shadowRoot.adoptedStyleSheets, dataBindingModelsPanelToolbar];
+        super.wasShown();
+        if (this._updateWhenVisible) {
+            this.update();
+        }
     }
 
     handleWatchIntervalChange() {
@@ -378,6 +379,13 @@ export class DataBindingModelsPanelView extends UI.ThrottledWidget.ThrottledWidg
     }
 
     async doUpdate(): Promise<void> {
+        if (!this._hasInitToobarStyles) {
+            const toolbar = this.parentWidget()?.element.querySelector('.toolbar') as HTMLElement | null;
+            if (toolbar && toolbar.shadowRoot) {
+                toolbar.shadowRoot.adoptedStyleSheets = [...toolbar.shadowRoot.adoptedStyleSheets, dataBindingModelsPanelToolbar];
+                this._hasInitToobarStyles = true;
+            }
+        }
         const modelNames = await this.getModelNamesData();
         this._emptyElement.classList.toggle('hidden', !!modelNames.length);
 
@@ -519,6 +527,8 @@ export class BindModel extends Common.ObjectWrapper.ObjectWrapper {
     _textPrompt?: ObjectUI.BindObjectPropertiesSection.ObjectPropertyPrompt;
     _result?: SDK.RemoteObject.RemoteObject | null;
     _preventClickTimeout?: number;
+    hideValueElement: () => void;
+    showValueElement: () => void;
     constructor(
         modelName: string | null,
         expandController: ObjectUI.BindObjectPropertiesSection.ObjectPropertiesSectionsTreeExpandController,
@@ -532,6 +542,8 @@ export class BindModel extends Common.ObjectWrapper.ObjectWrapper {
         this._element.classList.add('monospace');
         this._editing = false;
         this._linkifier = linkifier;
+        this.hideValueElement = this.toggleModelValue.bind(this, false);
+        this.showValueElement = this.toggleModelValue.bind(this, true);
 
         this._createBindModel();
         this.update();
@@ -551,14 +563,17 @@ export class BindModel extends Common.ObjectWrapper.ObjectWrapper {
 
     update(): void {
         if (this._modelName) {
-            executeRuntimeScript(this._modelName, BindModel.watchObjectGroupId)
-                .then(result => {
-                    if (result && 'object' in result) {
-                        this._updateBindModel(result.object, result.exceptionDetails);
-                    } else {
-                        this._updateBindModel();
-                    }
-                });
+            const domModel = SDK.TargetManager.TargetManager.instance().mainTarget()?.model(SDK.DOMModel.DOMModel)
+            domModel?.getDataBindingModels(false, this._modelName).then((res) => {
+                //@ts-ignore
+                if (res && res[this._modelName]) {
+                    //@ts-ignore
+                    const remoteObject = SDK.RemoteObject.RemoteObject.fromLocalObject(res[this._modelName]);
+                    this._updateBindModel(remoteObject);
+                } else {
+                    this._updateBindModel();
+                }
+            });
         } else {
             this._updateBindModel();
         }
@@ -715,6 +730,12 @@ export class BindModel extends Common.ObjectWrapper.ObjectWrapper {
             this._valueElement = propertyValue.element;
             titleElement?.appendChild(this._valueElement);
         }
+
+        this.toggleModelValue(!this._treeElement.expanded);
+    }
+
+    toggleModelValue(visible: boolean) {
+        if (this._valueElement) this._valueElement.classList.toggle('hidden', !visible);
     }
 
     _createBindModelTreeElement(modelValue?: SDK.RemoteObject.RemoteObject, exceptionDetails?: Protocol.Runtime.ExceptionDetails): void {
@@ -762,8 +783,10 @@ export class BindModel extends Common.ObjectWrapper.ObjectWrapper {
 
         if (this._treeElement.expanded) {
             this._treeElement.collapse();
+            this.showValueElement();
         } else if (!this._editing) {
             this._treeElement.expand();
+            this.hideValueElement();
         }
 
         // Disabled for now

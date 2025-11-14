@@ -2685,7 +2685,7 @@ domain DOM
       optional boolean verbose
       optional string modelName
     returns
-      any models
+      any
 
   command getDataBindingModelNames
     returns
@@ -2695,6 +2695,8 @@ domain DOM
     parameters
       string path
       string newValue
+    returns
+      boolean succeeded
 
   command importDataBindingModels
     parameters

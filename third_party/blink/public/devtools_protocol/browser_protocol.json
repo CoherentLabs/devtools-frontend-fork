@@ -4326,7 +4326,8 @@
                     "enum": [
                         "QuirksMode",
                         "LimitedQuirksMode",
-                        "NoQuirksMode"
+                        "NoQuirksMode",
+                        "any"
                     ]
                 },
                 {
@@ -5801,12 +5802,7 @@
                             "type": "string"
                         }
                     ],
-                    "returns": [
-                        {
-                            "name": "models",
-                            "type": "any"
-                        }
-                    ]
+                    "returns": []
                 },
                 {
                     "name": "getDataBindingModelNames",
@@ -5830,6 +5826,12 @@
                         {
                             "name": "newValue",
                             "type": "string"
+                        }
+                    ],
+                    "returns": [
+                        {
+                            "name": "succeeded",
+                            "type": "boolean"
                         }
                     ]
                 },

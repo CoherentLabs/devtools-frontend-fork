@@ -112,3 +112,18 @@
     background-color: ButtonText;
   }
 }
+
+.edit-object-property {
+  height: 16px !important;
+  transform: scale(0.75);
+  margin-left: -7px;
+  min-width: auto !important;
+}
+
+.edit-object-property .largeicon-edit {
+  width: 23px !important;
+}
+
+.tree-outline li:not(.parent)::before {
+  display: none;
+}

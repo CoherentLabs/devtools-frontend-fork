@@ -1519,7 +1519,7 @@ export class DOMModel extends SDKModel<EventTypes> {
     return response;
   }
 
-  updateDataBindingValue(path: string, newValue: string): Promise<Protocol.ProtocolResponseWithError> {
+  updateDataBindingValue(path: string, newValue: string): Promise<Protocol.DOM.UpdateDataBindingValueResponse> {
     return this.agent.invoke_updateDataBindingValue({path, newValue});
   }
 

@@ -56,3 +56,9 @@ export async function updateBindModel(modelName: string, objectGroup?: string) {
         engine.synchronizeModels();
     `, objectGroup);
 }
+
+export async function synchronizeModels( objectGroup?: string) {
+    return executeRuntimeScript(`
+        engine.synchronizeModels();
+    `, objectGroup);
+}

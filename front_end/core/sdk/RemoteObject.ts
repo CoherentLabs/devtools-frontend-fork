@@ -734,12 +734,15 @@ export class RemoteObjectProperty {
 // for traversing prototypes, extracting class names via constructor, handling properties
 // or functions.
 
+const LOCAL_JSON_OBJECT_PREVIEW_LIMIT = 5;
+
 export class LocalJSONObject extends RemoteObject {
   // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   valueInternal: any;
   private cachedDescription!: string;
   private cachedChildren!: RemoteObjectProperty[];
+  private cachedPreview: Protocol.Runtime.ObjectPreview | undefined;
 
   // TODO(crbug.com/1172300) Ignored during the jsdoc to ts migration
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -763,7 +766,64 @@ export class LocalJSONObject extends RemoteObject {
     return unserializableDescription || undefined;
   }
 
+  private generatePreview(): Protocol.Runtime.ObjectPreview {
+    if (this.cachedPreview) {
+      return this.cachedPreview;
+    }
+
+    const properties: Protocol.Runtime.PropertyPreview[] = [];
+    const value = this.valueInternal;
+
+    if (typeof value === 'object' && value !== null) {
+      const keys = Object.keys(value);
+      for (let i = 0; i < Math.min(keys.length, LOCAL_JSON_OBJECT_PREVIEW_LIMIT); i++) {
+        const key = keys[i];
+        const propValue = value[key];
+        const propType = typeof propValue;
+        let propValueStr = '';
+
+        if (propValue === null) {
+          propValueStr = 'null';
+        } else if (propType === 'string') {
+          propValueStr = `${propValue}`;
+        } else if (Array.isArray(propValue)) {
+          propValueStr = `Array(${propValue.length})`;
+        } else if (propType === 'object') {
+          propValueStr = propValue.constructor?.name || 'Object';
+        } else {
+          propValueStr = String(propValue);
+        }
+
+        const type = (propType === 'object' ? (propValue === null ? 'null' : (Array.isArray(propValue) ? 'array' : 'object')) : propType as 'string' | 'number' | 'boolean' | 'undefined') as Protocol.Runtime.PropertyPreviewType;
+        properties.push({
+          name: key,
+          type,
+          value: propValueStr,
+        });
+      }
+    }
+
+    this.cachedPreview = {
+      type: this.type as Protocol.Runtime.ObjectPreviewType,
+      subtype: this.subtype as Protocol.Runtime.ObjectPreviewSubtype | undefined,
+      description: this.description,
+      overflow: Object.keys(value || {}).length > LOCAL_JSON_OBJECT_PREVIEW_LIMIT,
+      properties: properties,
+    };
+
+    return this.cachedPreview;
+  }
+
+  get preview(): Protocol.Runtime.ObjectPreview | undefined {
+    if (this.type === 'object') {
+      return this.generatePreview();
+    }
+    return undefined;
+  }
+
   get description(): string {
+    if (this.type === 'object' && !this.subtype) return 'Object';
+    if (this.type === 'object' && this.subtype === 'array') return `Array(${this.arrayLength()})`;
     if (this.cachedDescription) {
       return this.cachedDescription;
     }

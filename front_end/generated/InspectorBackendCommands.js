@@ -167,7 +167,7 @@ inspectorBackend.registerCommand("Cast.stopCasting", [{"name": "sinkName", "type
 // DOM.
 inspectorBackend.registerEnum("DOM.PseudoType", {FirstLine: "first-line", FirstLetter: "first-letter", Before: "before", After: "after", Marker: "marker", Backdrop: "backdrop", Selection: "selection", TargetText: "target-text", SpellingError: "spelling-error", GrammarError: "grammar-error", Highlight: "highlight", FirstLineInherited: "first-line-inherited", Scrollbar: "scrollbar", ScrollbarThumb: "scrollbar-thumb", ScrollbarButton: "scrollbar-button", ScrollbarTrack: "scrollbar-track", ScrollbarTrackPiece: "scrollbar-track-piece", ScrollbarCorner: "scrollbar-corner", Resizer: "resizer", InputListButton: "input-list-button"});
 inspectorBackend.registerEnum("DOM.ShadowRootType", {UserAgent: "user-agent", Open: "open", Closed: "closed"});
-inspectorBackend.registerEnum("DOM.CompatibilityMode", {QuirksMode: "QuirksMode", LimitedQuirksMode: "LimitedQuirksMode", NoQuirksMode: "NoQuirksMode"});
+inspectorBackend.registerEnum("DOM.CompatibilityMode", {QuirksMode: "QuirksMode", LimitedQuirksMode: "LimitedQuirksMode", NoQuirksMode: "NoQuirksMode", Any: "any"});
 inspectorBackend.registerEvent("DOM.dataBindingModelsSynchronized", []);
 inspectorBackend.registerEvent("DOM.attributeModified", ["nodeId", "name", "value"]);
 inspectorBackend.registerEvent("DOM.attributeRemoved", ["nodeId", "name"]);
@@ -232,9 +232,9 @@ inspectorBackend.registerCommand("DOM.getFrameOwner", [{"name": "frameId", "type
 inspectorBackend.registerCommand("DOM.getContainerForNode", [{"name": "nodeId", "type": "number", "optional": false}, {"name": "containerName", "type": "string", "optional": true}], ["nodeId"]);
 inspectorBackend.registerCommand("DOM.getQueryingDescendantsForContainer", [{"name": "nodeId", "type": "number", "optional": false}], ["nodeIds"]);
 inspectorBackend.registerCommand("DOM.getDataBindingDataForNode", [{"name": "nodeId", "type": "number", "optional": false}], ["dataBindAttributes"]);
-inspectorBackend.registerCommand("DOM.getDataBindingModels", [{"name": "verbose", "type": "boolean", "optional": true}, {"name": "modelName", "type": "string", "optional": true}], ["models"]);
+inspectorBackend.registerCommand("DOM.getDataBindingModels", [{"name": "verbose", "type": "boolean", "optional": true}, {"name": "modelName", "type": "string", "optional": true}], []);
 inspectorBackend.registerCommand("DOM.getDataBindingModelNames", [], ["models"]);
-inspectorBackend.registerCommand("DOM.updateDataBindingValue", [{"name": "path", "type": "string", "optional": false}, {"name": "newValue", "type": "string", "optional": false}], []);
+inspectorBackend.registerCommand("DOM.updateDataBindingValue", [{"name": "path", "type": "string", "optional": false}, {"name": "newValue", "type": "string", "optional": false}], ["succeeded"]);
 inspectorBackend.registerCommand("DOM.importDataBindingModels", [{"name": "modelsJSON", "type": "object", "optional": false}], []);
 
 // DOMDebugger.

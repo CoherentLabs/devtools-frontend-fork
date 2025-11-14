@@ -1646,7 +1646,7 @@ export namespace ProtocolMapping {
     };
     'DOM.updateDataBindingValue': {
       paramsType: [Protocol.DOM.UpdateDataBindingValueRequest];
-      returnType: void;
+      returnType: Protocol.DOM.UpdateDataBindingValueResponse;
     };
     'DOM.importDataBindingModels': {
       paramsType: [Protocol.DOM.ImportDataBindingModelsRequest];

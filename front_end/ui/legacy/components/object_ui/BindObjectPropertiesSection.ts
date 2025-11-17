@@ -790,6 +790,9 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
   private editableDiv!: HTMLElement;
   propertyValue?: ObjectPropertyValue;
   expandedValueElement?: Element | null;
+  editIconElement!: UI.Toolbar.ToolbarButton;
+  private onEditBlurInput: ((this: HTMLElement, ev: FocusEvent) => any) | null = null;
+
   constructor(property: SDK.RemoteObject.RemoteObjectProperty, linkifier?: Components.Linkifier.Linkifier) {
     // Pass an empty title, the title gets made later in onattach.
     super();
@@ -801,6 +804,11 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
     this.maxNumPropertiesToShow = InitialVisibleChildrenLimit;
     this.listItemElement.addEventListener('contextmenu', this.contextMenuFired.bind(this), false);
     this.listItemElement.dataset.objectPropertyNameForTest = property.name;
+
+    this.editIconElement = new UI.Toolbar.ToolbarButton(i18nString(UIStrings.edit), 'largeicon-edit');
+    this.editIconElement.element.classList.add('edit-object-property', 'hidden');
+    this.editIconElement.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, () => this.startEditing());
+    this.listItemElement.appendChild(this.editIconElement.element);
   }
 
   // COHERENT_BEGIN
@@ -1364,21 +1372,11 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
       this.expandedValueElement = this.createExpandedValueElement(this.property.value);
     }
 
-    this.listItemElement.removeChildren();
     let container: Element;
-    let editIcon: UI.Toolbar.ToolbarButton | undefined;
     if (isInternalEntries) {
       container = UI.Fragment.html`<span class='name-and-value'>${this.nameElement}</span>`;
     } else {
       // COHERENT_BEGIN
-      // Add edit icon for editable primitive properties
-      if (this.isEditableProperty()) {
-        const iconSpan = new UI.Toolbar.ToolbarButton(i18nString(UIStrings.edit), 'largeicon-edit');
-        iconSpan.element.classList.add('edit-object-property');
-        iconSpan.addEventListener(UI.Toolbar.ToolbarButton.Events.Click, () => this.startEditing());
-        editIcon = iconSpan;
-      }
-
       const nameValueSpan = document.createElement('span');
       nameValueSpan.classList.add('name-and-value');
       nameValueSpan.appendChild(this.nameElement);
@@ -1388,11 +1386,11 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
       container = nameValueSpan;
       // COHERENT_END
     }
+
+    if (this.rowContainer) this.listItemElement.removeChild(this.rowContainer);
     this.rowContainer = (container as HTMLElement);
-    if (editIcon) {
-      this.listItemElement.appendChild(editIcon.element);
-    }
     this.listItemElement.appendChild(this.rowContainer);
+    this.editIconElement.element.classList.toggle('hidden', !this.isEditableProperty());
   }
 
   private updatePropertyPath(): void {
@@ -1539,7 +1537,8 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
       }, false);
 
       // Handle blur - only when truly losing focus (clicking outside)
-      inputElement.addEventListener('blur', this.editingCommitted.bind(this, originalContent), false);
+      this.onEditBlurInput = this.editingCommitted.bind(this, originalContent);
+      inputElement.addEventListener('blur', this.onEditBlurInput, false);
     }
     // COHERENT_END
 
@@ -1575,14 +1574,23 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
   }
 
   private promptKeyDown(originalContent: string, event: Event): void {
+    const inputElement = this.prompt?._proxyElement?.querySelector('input') || this.prompt?._proxyElement?.querySelector('[contenteditable]');
     const keyboardEvent = (event as KeyboardEvent);
     if (keyboardEvent.key === 'Enter') {
       keyboardEvent.consume();
+      if (this.onEditBlurInput) {
+        inputElement?.removeEventListener('blur', this.onEditBlurInput, false);
+        this.onEditBlurInput = null;
+      }
       this.editingCommitted(originalContent);
       return;
     }
     if (keyboardEvent.key === Platform.KeyboardUtilities.ESCAPE_KEY) {
       keyboardEvent.consume();
+      if (this.onEditBlurInput) {
+        inputElement?.removeEventListener('blur', this.onEditBlurInput, false);
+        this.onEditBlurInput = null;
+      }
       this.editingCancelled();
       return;
     }
@@ -1627,7 +1635,7 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
       Common.Console.Console.instance().error(i18nString(UIStrings.failedToEditModelProperty));
     }
 
-    this.updateInPlace();
+    await this.updateInPlace();
   }
   // COHERENT_END
 

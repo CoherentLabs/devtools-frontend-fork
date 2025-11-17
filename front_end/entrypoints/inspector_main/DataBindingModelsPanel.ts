@@ -208,6 +208,7 @@ export class DataBindingModelsPanelView extends UI.ThrottledWidget.ThrottledWidg
             className: 'update-models-interval-input',
         });
         this._intervalInput.addEventListener('blur', this.handleWatchIntervalChange.bind(this));
+        this._intervalInput.addEventListener('keydown', this.handleWatchIntervalKeyDown.bind(this));
         if (!this._watchIntervalValue.get()) {
             this._watchIntervalValue.set(DEFAULT_WATCH_INTERVAL);
             this._intervalInput.value = String(DEFAULT_WATCH_INTERVAL);
@@ -253,6 +254,22 @@ export class DataBindingModelsPanelView extends UI.ThrottledWidget.ThrottledWidg
 
         this.clearWatchInterval();
         this.addAutoRefreshInterval();
+    }
+
+    handleWatchIntervalKeyDown(event: KeyboardEvent) {
+        switch (event.key) {
+            case 'Escape': {
+                event.consume(true);
+                this._intervalInput!.value = String(this._watchIntervalValue.get());
+                (event.currentTarget as HTMLInputElement).blur();
+                break;
+            }
+            case 'Enter': {
+                event.consume(true);
+                (event.currentTarget as HTMLInputElement).blur();
+                break;
+            }
+        }
     }
 
     _createFileSelector(): void {

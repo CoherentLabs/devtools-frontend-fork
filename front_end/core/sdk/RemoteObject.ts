@@ -822,8 +822,20 @@ export class LocalJSONObject extends RemoteObject {
   }
 
   get description(): string {
-    if (this.type === 'object' && !this.subtype) return 'Object';
-    if (this.type === 'object' && this.subtype === 'array') return `Array(${this.arrayLength()})`;
+    if (this.type === 'object' && !this.subtype) {
+      if (!this.cachedDescription) {
+        this.cachedDescription = 'Object';
+      }
+      return this.cachedDescription;
+    }
+
+    if (this.type === 'object' && this.subtype === 'array') {
+      if (!this.cachedDescription) {
+        this.cachedDescription = `Array(${this.arrayLength()})`;
+      }
+      return this.cachedDescription;
+    }
+
     if (this.cachedDescription) {
       return this.cachedDescription;
     }

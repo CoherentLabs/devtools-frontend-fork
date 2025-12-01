@@ -181,7 +181,7 @@ export class BindObjectPropertiesSection extends UI.TreeOutline.TreeOutlineInSha
 
     objectPropertiesSectionMap.set(this.element, this);
     this.registerRequiredCSS('ui/legacy/components/object_ui/objectValue.css');
-    this.registerRequiredCSS('ui/legacy/components/object_ui/objectValue.css');
+    this.registerRequiredCSS('ui/legacy/components/object_ui/objectPropertiesSection.css');
     this.rootElement().childrenListElement.classList.add('source-code', 'object-properties-section');
   }
 
@@ -1600,8 +1600,8 @@ export class ObjectPropertyTreeElement extends UI.TreeOutline.TreeElement {
   private async updateBindModelValue(value: string) {
     value = JavaScriptREPL.wrapObjectLiteral(value.trim());
 
-    const domModel = SDK.TargetManager.TargetManager.instance().mainTarget()?.model(SDK.DOMModel.DOMModel)
-    const res = await domModel?.updateDataBindingValue(this.nameElement.title, value);
+    const domModel = SDK.TargetManager.TargetManager.instance().mainTarget()?.model(SDK.DOMModel.DOMModel);
+    const res = await domModel?.updateDataBindingValue(this.nameElement?.title, value);
     const hasError = res?.getError();
     const hasSucceeded = res?.succeeded;
     if (!hasError && hasSucceeded) {

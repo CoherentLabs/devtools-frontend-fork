@@ -97,7 +97,7 @@ export class DataBindingModelsPanelView extends UI.ThrottledWidget.ThrottledWidg
     _watchInterval: any;
     _intervalInput: HTMLInputElement | null = null;
     _inputIntervalWrapper: HTMLDivElement | null = null;
-    _hasInitToobarStyles = false;
+    _hasInitToolbarStyles = false;
     private constructor() {
         super(true);
 
@@ -396,11 +396,11 @@ export class DataBindingModelsPanelView extends UI.ThrottledWidget.ThrottledWidg
     }
 
     async doUpdate(): Promise<void> {
-        if (!this._hasInitToobarStyles) {
+        if (!this._hasInitToolbarStyles) {
             const toolbar = this.parentWidget()?.element.querySelector('.toolbar') as HTMLElement | null;
             if (toolbar && toolbar.shadowRoot) {
                 toolbar.shadowRoot.adoptedStyleSheets = [...toolbar.shadowRoot.adoptedStyleSheets, dataBindingModelsPanelToolbar];
-                this._hasInitToobarStyles = true;
+                this._hasInitToolbarStyles = true;
             }
         }
         const modelNames = await this.getModelNamesData();
@@ -580,7 +580,7 @@ export class BindModel extends Common.ObjectWrapper.ObjectWrapper {
 
     update(): void {
         if (this._modelName) {
-            const domModel = SDK.TargetManager.TargetManager.instance().mainTarget()?.model(SDK.DOMModel.DOMModel)
+            const domModel = SDK.TargetManager.TargetManager.instance().mainTarget()?.model(SDK.DOMModel.DOMModel);
             domModel?.getDataBindingModels(false, this._modelName).then((res) => {
                 //@ts-ignore
                 if (res && res[this._modelName]) {

@@ -66,6 +66,39 @@ export class DataBindBaseTreeElement extends UI.TreeOutline.TreeElement {
   }
 }
 
+type DefaultNodeTypes = (DataBindNodeTreeElement | DataBindClassToggleNodeTreeElement)[];
+
+export class DataBindBaseTreeElementWithSubNodes<T = DefaultNodeTypes> extends DataBindBaseTreeElement {
+  public dataBindNodeElements: T;
+
+  constructor() {
+    super();
+    this.dataBindNodeElements = [] as unknown as T;
+  }
+
+  clearNonUsedNodeElements(iteratedNodes: number) {
+    const arr = this.dataBindNodeElements as unknown as DefaultNodeTypes;
+    if (arr.length > iteratedNodes) {
+      for (let i = iteratedNodes; i < arr.length; i++) {
+        this.removeChild(arr[i]);
+      }
+      arr.splice(iteratedNodes, arr.length);
+    }
+  }
+
+  createBindClassToggleNodeTreeElement(className: string, classState: string, evalNodes: Protocol.DOM.DataBindNode[]) {
+    const node = new DataBindClassToggleNodeTreeElement(className, classState, evalNodes);
+    this.appendChild(node);
+    return node;
+  }
+
+  createBindNodeTreeElement(evaluatableExpression: string, evaluatedValue: string, valueType: string, evaluationError: string | undefined) {
+    const node = new DataBindNodeTreeElement(evaluatableExpression, evaluatedValue, valueType, evaluationError);
+    this.appendChild(node);
+    return node;
+  }
+}
+
 export class DataBindNodeInfoTreeElement extends DataBindBaseTreeElement {
   private evaluationErrorElement: HTMLSpanElement | null = null;
   public evaluationError?: string;
@@ -102,6 +135,64 @@ export class DataBindNodeInfoTreeElement extends DataBindBaseTreeElement {
 
     wrapper.appendChild(evaluationErrorWrapper);
     this.listItemElement.appendChild(wrapper);
+  }
+}
+
+export class DataBindClassToggleNodeTreeElement extends DataBindBaseTreeElementWithSubNodes<DataBindNodeTreeElement[]> {
+  private classNameElement: HTMLSpanElement | null = null;
+  private classStateElement: HTMLSpanElement | null = null;
+  public className?: string;
+  public classState?: string;
+  public evalNodes?: Protocol.DOM.DataBindNode[]
+  constructor(className: string, classState: string, evalNodes: Protocol.DOM.DataBindNode[]) {
+    super();
+
+    this.listItemElement.classList.add('monospace');
+    this.listItemElement.classList.add('expressions-list');
+
+    this.expand();
+    this.createElements();
+    this.update(className, classState, evalNodes);
+  }
+
+  update(className: string, classState: string, evalNodes: Protocol.DOM.DataBindNode[]) {
+    if (className !== this.className) this.classNameElement!.textContent = className;
+    if (classState !== this.classState) this.classStateElement!.textContent = classState + '';
+
+    this.className = className;
+    this.classState = classState;
+    this.updateEvalNodes(evalNodes);
+  }
+
+  updateEvalNodes(evalNodes: Protocol.DOM.DataBindNode[]) {
+    let nodeHasError = false;
+    let currentNodeIndex = 0;
+    let iteratedNodes = 0;
+
+    for (let j = 0; j < evalNodes.length; j++) {
+      const { evaluatableExpression, evaluatedValue, evaluationError, valueType } = evalNodes[j];
+      if (evaluationError || valueType === 'invalid') nodeHasError = true;
+      iteratedNodes++;
+
+      if (!this.dataBindNodeElements[currentNodeIndex]) {
+        this.dataBindNodeElements[currentNodeIndex++] = this.createBindNodeTreeElement(evaluatableExpression, evaluatedValue, valueType, evaluationError);
+        continue;
+      }
+
+      this.dataBindNodeElements[currentNodeIndex++].update(evaluatableExpression, evaluatedValue, valueType, evaluationError);
+    }
+
+    this.clearNonUsedNodeElements(iteratedNodes);
+
+    if (nodeHasError) {
+      this.toggleMark(true, 'error', 'Errors generated while parsing the attribute');
+    }
+  }
+
+  createElements(): void {
+    this.classNameElement = this.appendSpanElement(this.listItemElement, '', 'object-value-string');
+    this.appendSeparatorElement(this.listItemElement);
+    this.classStateElement = this.appendSpanElement(this.listItemElement, '', 'object-value-boolean');
   }
 }
 
@@ -152,12 +243,11 @@ export class DataBindNodeTreeElement extends DataBindBaseTreeElement {
     this.appendChild(this.dataBindNodeInfoTree);
   }
 }
-export class DataBindAttributeTreeElement extends DataBindBaseTreeElement {
+export class DataBindAttributeTreeElement extends DataBindBaseTreeElementWithSubNodes {
   public attributeData: Protocol.DOM.DataBindAttributeData | null = null;
   private attributeNameElement: HTMLSpanElement;
   private attributeValueElement: HTMLSpanElement;
   private errorsContainerElement: HTMLElement;
-  private dataBindNodeElements: DataBindNodeTreeElement[] = []
 
   constructor(attributeData: Protocol.DOM.DataBindAttributeData) {
     super();
@@ -171,53 +261,122 @@ export class DataBindAttributeTreeElement extends DataBindBaseTreeElement {
     this.update(attributeData);
   }
 
+  private filterDataBindNodeTree(value: RegExp | null, node: DataBindNodeTreeElement) {
+    const nodeVisible = value ? node.expression?.match(value) || node.value?.match(value) : true;
+    node.toggleTreeElement(!!nodeVisible);
+    node.toggleBindNodeInfoTree(!!nodeVisible);
+    return nodeVisible;
+  }
+
   public filterMutators(value: RegExp | null): boolean {
     let mutatorsVisible = false;
 
     this.dataBindNodeElements.forEach((node) => {
-      const nodeVisible = value ? node.expression?.match(value) || node.value?.match(value) : true;
-      node.toggleTreeElement(!!nodeVisible);
-      node.toggleBindNodeInfoTree(!!nodeVisible);
-      if (nodeVisible) mutatorsVisible = true;
+      if (node instanceof DataBindClassToggleNodeTreeElement) {
+        let nodeVisible = value ? node.className?.match(value) : true;
+        node.dataBindNodeElements.forEach((bindNode) => {
+          if (this.filterDataBindNodeTree(value, bindNode)) nodeVisible = true;
+        });
+
+        node.toggleTreeElement(!!nodeVisible);
+        if (nodeVisible) mutatorsVisible = true;
+
+        return;
+      }
+
+      if (this.filterDataBindNodeTree(value, node)) mutatorsVisible = true;
     })
 
     return mutatorsVisible;
   }
 
+  private updateClassToggleMutators(attributeData: Protocol.DOM.DataBindAttributeData, classNames: RegExpMatchArray) {
+    const mutatorsErrors = [] as string[];
+    let hasError = false;
+
+    let currentNodeIndex = 0;
+    let iteratedNodes = 0;
+
+    for (const [mutatorIndex, mutator] of attributeData.mutators.entries()) {
+      if (mutator.parsingError) mutatorsErrors.push(mutator.parsingError);
+      if (mutator.compilationError) mutatorsErrors.push(mutator.compilationError);
+
+      const evalNodes = mutator.evaluationNodes;
+      // Check if some of the eval nodes are having errors so we can show the error mark later
+      for (let j = 0; j < evalNodes.length; j++) {
+        const { evaluationError, valueType } = evalNodes[j];
+        if (evaluationError || valueType === 'invalid') hasError = true;
+      }
+
+      if (!evalNodes.length) continue;
+
+      this.setExpandable(true);
+
+      const classState = evalNodes[0]?.evaluatedValue;
+      const className = classNames[mutatorIndex];
+      iteratedNodes++;
+
+      const currentNode = this.dataBindNodeElements[currentNodeIndex];
+      if (!currentNode) {
+        this.dataBindNodeElements[currentNodeIndex++] = this.createBindClassToggleNodeTreeElement(className, classState, evalNodes);
+        continue;
+      }
+
+      if (!(currentNode instanceof DataBindClassToggleNodeTreeElement)) {
+        // Replace the item if before that it has been insance of DataBindNodeTreeElement
+        this.removeChild(currentNode);
+        this.dataBindNodeElements[currentNodeIndex++] = this.createBindClassToggleNodeTreeElement(className, classState, evalNodes);
+      } else {
+        // Update the node values if it is instance of DataBindClassToggleNodeTreeElement
+        (this.dataBindNodeElements[currentNodeIndex++] as DataBindClassToggleNodeTreeElement).update(className, classState, evalNodes);
+      }
+    }
+
+    this.clearNonUsedNodeElements(iteratedNodes);
+    this.updateErrorsContainerElement(hasError, mutatorsErrors);
+  }
+
   private updateMutators(attributeData: Protocol.DOM.DataBindAttributeData) {
     const mutatorsErrors = [] as string[];
-    let nodeHasError = false;
+    let hasError = false;
 
     let currentNodeIndex = 0;
     let iteratedNodes = 0;
 
     for (const mutator of attributeData.mutators) {
-      if (mutator.parsingError) {
-        mutatorsErrors.push(mutator.parsingError);
-      }
-
-      if (mutator.compilationError) {
-        mutatorsErrors.push(mutator.compilationError);
-      }
+      if (mutator.parsingError) mutatorsErrors.push(mutator.parsingError);
+      if (mutator.compilationError) mutatorsErrors.push(mutator.compilationError);
 
       const evalNodes = mutator.evaluationNodes;
       this.setExpandable(evalNodes.length > 0);
 
       for (let j = 0; j < evalNodes.length; j++) {
         const { evaluatableExpression, evaluatedValue, evaluationError, valueType } = evalNodes[j];
-        if (evaluationError || valueType === 'invalid') nodeHasError = true;
+        if (evaluationError || valueType === 'invalid') hasError = true;
         iteratedNodes++;
-        if (!this.dataBindNodeElements[currentNodeIndex]) {
-          const node = new DataBindNodeTreeElement(evaluatableExpression, evaluatedValue, valueType, evaluationError);
-          this.appendChild(node);
-          this.dataBindNodeElements[currentNodeIndex++] = node;
+
+        const currentNode = this.dataBindNodeElements[currentNodeIndex];
+        if (!currentNode) {
+          this.dataBindNodeElements[currentNodeIndex++] = this.createBindNodeTreeElement(evaluatableExpression, evaluatedValue, valueType, evaluationError);
           continue;
         }
 
-        this.dataBindNodeElements[currentNodeIndex++].update(evaluatableExpression, evaluatedValue, valueType, evaluationError);
+        if (!(currentNode instanceof DataBindNodeTreeElement)) {
+          // Replace node if the previous one has been instance of DataBindClassToggleTreeElement
+          this.removeChild(currentNode);
+          this.dataBindNodeElements[currentNodeIndex++] = this.createBindNodeTreeElement(evaluatableExpression, evaluatedValue, valueType, evaluationError);
+        } else {
+          // Update the node values if it is instance of DataBindClassToggleTreeElement
+          (this.dataBindNodeElements[currentNodeIndex++] as DataBindNodeTreeElement).update(evaluatableExpression, evaluatedValue, valueType, evaluationError);
+        }
       }
     }
 
+    this.clearNonUsedNodeElements(iteratedNodes);
+    this.updateErrorsContainerElement(hasError, mutatorsErrors);
+  }
+
+  clearNonUsedNodeElements(iteratedNodes: number) {
     if (this.dataBindNodeElements.length > iteratedNodes) {
       for (let i = iteratedNodes; i < this.dataBindNodeElements.length; i++) {
         this.removeChild(this.dataBindNodeElements[i]);
@@ -225,7 +384,9 @@ export class DataBindAttributeTreeElement extends DataBindBaseTreeElement {
 
       this.dataBindNodeElements.splice(iteratedNodes, this.dataBindNodeElements.length);
     }
+  }
 
+  updateErrorsContainerElement(nodeHasError: boolean, mutatorsErrors: string[]) {
     if (nodeHasError || mutatorsErrors.length > 0) {
       this.toggleMark(true, 'error', 'Errors generated while parsing the attribute');
     }
@@ -248,7 +409,16 @@ export class DataBindAttributeTreeElement extends DataBindBaseTreeElement {
       this.attributeValueElement.textContent = attributeData.attributeValue;
     }
 
-    this.updateMutators(attributeData);
+
+    if (attributeData.attributeName === 'data-bind-class-toggle') {
+      const classNames = attributeData.attributeValue.match(/[^:;]+(?=:)/g);
+
+      if (classNames) this.updateClassToggleMutators(attributeData, classNames);
+      else this.updateMutators(attributeData);
+    } else {
+      this.updateMutators(attributeData);
+    }
+
     this.attributeData = attributeData;
   }
 }

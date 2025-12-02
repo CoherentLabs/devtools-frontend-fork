@@ -14,6 +14,8 @@ generate_css("css_files") {
     "computedStyleSidebarPane.css",
     "computedStyleWidgetTree.css",
     "domLinkifier.css",
+    "dataBindingPanel.css",
+    "dataBindingPanelToolbar.css"
   ]
 }
 
@@ -47,6 +49,7 @@ devtools_module("elements") {
     "StylePropertyHighlighter.ts",
     "StylePropertyTreeElement.ts",
     "StylesSidebarPane.ts",
+    "DataBindingSidebarPane.ts",
   ]
 
   deps = [
@@ -82,7 +85,7 @@ devtools_module("elements") {
 }
 
 copy_to_gen("legacy_css") {
-  sources = [ "layoutPane.css" ]
+  sources = [ "layoutPane.css", "components/dataBindingProperty.css" ]
 }
 
 devtools_entrypoint("bundle") {

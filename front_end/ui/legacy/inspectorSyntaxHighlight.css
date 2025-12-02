@@ -205,6 +205,11 @@
   word-break: break-all;
 }
 
+.attribute-error-background {
+  background-color: var(--color-error-background);
+  text-decoration-line: spelling-error;
+}
+
 .devtools-link {
   color: var(--color-link);
   text-decoration: underline;
@@ -346,3 +351,9 @@
     color: HighlightText;
   }
 }
+
+/* COHERENT_BEGIN */
+.data-bind-expression:hover {
+  background-color: var(--bind-attribute-hover-color);
+}
+/* COHERENT_END */

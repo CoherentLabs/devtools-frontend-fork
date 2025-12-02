@@ -18,6 +18,9 @@ import './PropertiesWidget.js';
 import './NodeStackTraceWidget.js';
 import './StylePropertyHighlighter.js';
 import './StylesSidebarPane.js';
+/* COHERENT_BEGIN */
+import './DataBindingSidebarPane.js';
+/* COHERENT_END */
 import './StylePropertyTreeElement.js';
 import './ComputedStyleWidget.js';
 import './ElementsPanel.js';
@@ -49,6 +52,9 @@ import * as StyleEditorWidget from './StyleEditorWidget.js';
 import * as StylePropertyHighlighter from './StylePropertyHighlighter.js';
 import * as StylePropertyTreeElement from './StylePropertyTreeElement.js';
 import * as StylesSidebarPane from './StylesSidebarPane.js';
+/* COHERENT_BEGIN */
+import * as DataBindingSidebarPane from './DataBindingSidebarPane.js';
+/* COHERENT_END */
 
 export {
   ClassesPaneWidget,
@@ -75,4 +81,7 @@ export {
   StylePropertyHighlighter,
   StylePropertyTreeElement,
   StylesSidebarPane,
+  /* COHERENT_BEGIN */
+  DataBindingSidebarPane,
+  /* COHERENT_END */
 };

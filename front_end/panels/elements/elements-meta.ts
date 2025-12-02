@@ -133,10 +133,13 @@ const UIStrings = {
    * the shadow DOM nodes of HTML elements that are built into the browser (e.g. the <input> element).
    */
   showUserAgentShadowDOM: 'Show user agent shadow `DOM`',
+  /* COHERENT_BEGIN */
+  dataBinding: 'Data Binding',
+  /* COHERENT_END */
 };
 const str_ = i18n.i18n.registerUIStrings('panels/elements/elements-meta.ts', UIStrings);
 const i18nLazyString = i18n.i18n.getLazilyComputedLocalizedString.bind(undefined, str_);
-let loadedElementsModule: (typeof Elements|undefined);
+let loadedElementsModule: (typeof Elements | undefined);
 
 async function loadElementsModule(): Promise<typeof Elements> {
   if (!loadedElementsModule) {
@@ -207,6 +210,27 @@ UI.ViewManager.registerViewExtension({
     return Elements.NodeStackTraceWidget.NodeStackTraceWidget.instance();
   },
 });
+
+/* COHERENT_BEGIN */
+Common.Settings.registerSettingExtension({
+  settingName: 'highlightBindingAttributes',
+  settingType: Common.Settings.SettingType.BOOLEAN,
+  defaultValue: true,
+});
+
+UI.ViewManager.registerViewExtension({
+  location: UI.ViewManager.ViewLocationValues.ELEMENTS_SIDEBAR,
+  id: 'elements.data-binding-sidebar',
+  title: i18nLazyString(UIStrings.dataBinding),
+  commandPrompt: i18nLazyString(UIStrings.dataBinding),
+  persistence: UI.ViewManager.ViewPersistence.PERMANENT,
+  order: 4,
+  async loadView() {
+    const Elements = await loadElementsModule();
+    return Elements.DataBindingSidebarPane.DataBindingSidebarPane.instance();
+  },
+});
+/* COHERENT_END */
 
 UI.ViewManager.registerViewExtension({
   location: UI.ViewManager.ViewLocationValues.ELEMENTS_SIDEBAR,

@@ -1038,7 +1038,7 @@ declare namespace ProtocolProxyApi {
 
     invoke_getDataBindingModelNames(): Promise<Protocol.DOM.GetDataBindingModelNamesResponse>;
 
-    invoke_updateDataBindingValue(params: Protocol.DOM.UpdateDataBindingValueRequest): Promise<Protocol.ProtocolResponseWithError>;
+    invoke_updateDataBindingValue(params: Protocol.DOM.UpdateDataBindingValueRequest): Promise<Protocol.DOM.UpdateDataBindingValueResponse>;
 
     invoke_importDataBindingModels(params: Protocol.DOM.ImportDataBindingModelsRequest): Promise<Protocol.ProtocolResponseWithError>;
 

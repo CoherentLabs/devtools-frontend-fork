@@ -119,7 +119,7 @@ export class TextPrompt extends Common.ObjectWrapper.ObjectWrapper implements Su
    * or the |blurListener| parameter to register a "blur" event listener on the |element|
    * (since the "blur" event does not bubble.)
    */
-  attachAndStartEditing(element: Element, blurListener: (arg0: Event) => void): Element {
+  attachAndStartEditing(element: Element, blurListener?: (arg0: Event) => void): Element {
     const proxyElement = this._attachInternal(element);
     this._startEditing(blurListener);
     return proxyElement;

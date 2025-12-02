@@ -1,0 +1,53 @@
+.value-edit {
+    cursor: text;
+}
+
+.bind-expression-wrapper {
+    display: flex;
+    flex-direction: column;
+}
+
+.object-value-string,
+.object-value-boolean,
+.object-value-undefined,
+.object-value-number,
+.object-value-object,
+.object-value-array,
+.object-value-null {
+    user-select: text;
+    cursor: text;
+    white-space: normal !important;
+}
+
+.status-ok {
+    color: var(--color-accent-green);
+}
+
+.bind-warning-message,
+.bind-error-message {
+    user-select: text;
+    cursor: text;
+    padding: 0 4px 0 4px;
+}
+
+.bind-error-message.mutators {
+    margin-left: 2px;
+}
+
+.bind-error-message {
+    color: var(--override-error-text-color);
+    background-color: var(--override-console-error-background-color);
+}
+
+.bind-warning-message {
+    color: var(--override-console-warning-text-color);
+    background-color: var(--override-console-warning-background-color);
+}
+
+.expressions-list {
+    align-items: flex-start !important;
+}
+
+.expression-name {
+    color: var(--color-syntax-2) !important;
+}

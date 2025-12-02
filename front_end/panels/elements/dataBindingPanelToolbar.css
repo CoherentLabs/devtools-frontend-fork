@@ -1,0 +1,28 @@
+.filter-bindings-input {
+  outline: none !important;
+  border: none;
+  background: var(--color-background);
+  padding-left: 4px;
+  margin: 3px;
+  height: 20px;
+  flex: 1 0 0;
+  color: inherit;
+}
+
+.expand-tree-icon,
+.collapse-tree-icon {
+  user-select: none;
+  -webkit-mask-image: var(--image-file-treeoutlineTriangles);
+  -webkit-mask-size: 32px 24px;
+  -webkit-mask-position: -16px 0;
+  background-color: var(--color-text-secondary);
+  text-shadow: none;
+  height: 12px;
+  width: 14px;
+  margin-left: 4px;
+}
+
+.collapse-tree-icon {
+  margin-right: 4px;
+  transform: rotate(180deg);
+}

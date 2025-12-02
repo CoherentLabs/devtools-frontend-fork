@@ -7,6 +7,7 @@ import * as JSPresentationUtils from './JSPresentationUtils.js';
 import * as Linkifier from './Linkifier.js';
 import * as Reload from './Reload.js';
 import * as TargetDetachedDialog from './TargetDetachedDialog.js';
+import * as DataBindingUtils from './DataBindingUtils.js';
 
 export {
   ImagePreview,
@@ -14,4 +15,5 @@ export {
   Linkifier,
   Reload,
   TargetDetachedDialog,
+  DataBindingUtils,
 };

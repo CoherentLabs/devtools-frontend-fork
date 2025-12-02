@@ -359,3 +359,10 @@ li.hovered:not(.always-parent) + ol.children:not(.shadow-root) {
     forced-color-adjust: none;
   }
 }
+
+/* COHERENT_BEGIN */
+.bind-expression-popover {
+  width: 300px;
+  height: 100px;
+}
+/* COHERENT_END */

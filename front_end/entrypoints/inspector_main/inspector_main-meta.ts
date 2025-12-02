@@ -27,7 +27,15 @@ const UIStrings = {
   * some Cohtml specific actions and settings.
   */
   cohtml: 'Cohtml',
-
+  /**
+  * @description Title of the Data binding models panel in the Command Menu. The panel shows preview and gives control over
+  * some bind models.
+  */
+  bindingModels: 'Data Binding Models',
+  /**
+  * @description Command prompt for the Data Binding Models panel in the Command menu.
+  */
+  showBindingModelsView: 'Show Data Binding Models View',
   /**
   * @description Command prompt for the Cohtml panel in the Command menu.
   */
@@ -154,6 +162,34 @@ UI.ViewManager.registerViewExtension({
 });
 
 // COHERENT_BEGIN
+UI.ViewManager.registerViewExtension({
+  location: UI.ViewManager.ViewLocationValues.DRAWER_VIEW,
+  id: 'cohtml-binding-models',
+  title: i18nLazyString(UIStrings.bindingModels),
+  commandPrompt: i18nLazyString(UIStrings.showBindingModelsView),
+  persistence: UI.ViewManager.ViewPersistence.CLOSEABLE,
+  order: 50,
+  hasToolbar: true,
+  async loadView() {
+    const InspectorMain = await loadInspectorMainModule();
+    return InspectorMain.DataBindingModelsPanelView.DataBindingModelsPanelView.instance();
+  },
+  tags: [
+  ],
+});
+
+Common.Settings.registerSettingExtension({
+  settingName: 'autoUpdateBindModels',
+  settingType: Common.Settings.SettingType.BOOLEAN,
+  defaultValue: false,
+});
+
+Common.Settings.registerSettingExtension({
+  settingName: 'autoUpdateBindModelsInterval',
+  settingType: Common.Settings.SettingType.NUMBER,
+  defaultValue: 2000,
+});
+
 UI.ViewManager.registerViewExtension({
   location: UI.ViewManager.ViewLocationValues.DRAWER_VIEW,
   id: 'cohtml',

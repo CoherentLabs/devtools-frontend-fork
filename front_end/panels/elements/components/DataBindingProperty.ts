@@ -221,7 +221,9 @@ export class DataBindNodeTreeElement extends DataBindBaseTreeElement {
 
     if (expression !== this.expression) this.expressionElement!.textContent = expression;
     if (value !== this.value) {
-      this.valueElement!.textContent = value;
+      this.valueElement!.textContent = valueType === 'string' ? '\"' : '';
+      this.valueElement!.textContent += value;
+      this.valueElement!.textContent += valueType === 'string' ? '\"' : '';
       if (this.valueElement) this.valueElement.className = `object-value-${valueType}`;
     }
 

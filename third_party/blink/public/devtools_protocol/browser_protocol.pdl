@@ -2676,7 +2676,9 @@ domain DOM
   # attribute of the selected node 
   command getDataBindingDataForNode
     parameters
-      NodeId nodeId
+      optional NodeId nodeId
+      optional number nodeType
+      optional string nodeName
     returns
       array of DataBindAttributeData dataBindAttributes
 

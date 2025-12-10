@@ -217,9 +217,11 @@ export class DataBindingSidebarPane extends ElementsSidebarPane {
   }
 
   async doUpdate(): Promise<void> {
-    if (!this.node()) return this.showMessage(this.noSelectedNodeInfo);
-    const domModel = this.node()?.domModel();
-    const data = await domModel?.getDataBindingDataForNode(this.node()!.id);
+    const node = this.node();
+    if (!node) return this.showMessage(this.noSelectedNodeInfo);
+
+    const domModel = node.domModel();
+    const data = await domModel?.getDataBindingDataForNode(node.id, node.nodeType(), node.nodeName());
     if (!data) return this.showMessage(this.fetchDataWarning);
 
     const attributes = data?.dataBindAttributes || [];

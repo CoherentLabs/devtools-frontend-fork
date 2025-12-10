@@ -42,7 +42,7 @@ import * as UI from '../../ui/legacy/legacy.js';
 /* COHERENT_BEGIN */
 import * as ElementsComponents from './components/components.js';
 import { PopoverRequest } from '../../ui/legacy/PopoverHelper.js';
-type BindAttributeTargetElement = HTMLElement & { attrName: string, domModel: SDK.DOMModel.DOMModel, nodeId: Protocol.DOM.NodeId };
+type BindAttributeTargetElement = HTMLElement & { attrName: string, domModel: SDK.DOMModel.DOMModel, nodeId: Protocol.DOM.NodeId, _nodeName: string, _nodeType: number };
 /* COHERENT_END */
 
 import { linkifyDeferredNodeReference } from './DOMLinkifier.js';
@@ -267,7 +267,8 @@ export class ElementsTreeOutline extends UI.TreeOutline.TreeOutline {
         if (popover._maxSize) popover._maxSize.height = 500;
 
         this._bindAttributeHoveredElement = targetEl;
-        const data = await this._bindAttributeHoveredElement?.domModel.getDataBindingDataForNode(this._bindAttributeHoveredElement.nodeId) as Protocol.DOM.GetDataBindingDataForNodeResponse;
+        const { nodeId, _nodeType, _nodeName } = this._bindAttributeHoveredElement || {};
+        const data = await this._bindAttributeHoveredElement?.domModel.getDataBindingDataForNode(nodeId, _nodeType, _nodeName) as Protocol.DOM.GetDataBindingDataForNodeResponse;
         const attributesData = data ? data.dataBindAttributes : null;
         const container = document.createElement('div');
         container.classList.add('bind-expression-popover');
@@ -322,7 +323,8 @@ export class ElementsTreeOutline extends UI.TreeOutline.TreeOutline {
       return;
     }
 
-    const data = await this._bindAttributeHoveredElement?.domModel.getDataBindingDataForNode(this._bindAttributeHoveredElement?.nodeId as Protocol.DOM.NodeId) as Protocol.DOM.GetDataBindingDataForNodeResponse;
+    const { nodeId, _nodeType, _nodeName } = this._bindAttributeHoveredElement || {};
+    const data = await this._bindAttributeHoveredElement?.domModel.getDataBindingDataForNode(nodeId, _nodeType, _nodeName) as Protocol.DOM.GetDataBindingDataForNodeResponse;
     const attributesData = data ? data.dataBindAttributes : null;
 
     if (!attributesData) {

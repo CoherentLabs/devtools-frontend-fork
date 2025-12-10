@@ -1506,6 +1506,10 @@ export class ElementsTreeElement extends UI.TreeOutline.TreeElement {
       attrSpanElement.attrName = name;
       //@ts-ignore
       attrSpanElement.nodeId = this._node.id;
+      //@ts-ignore
+      attrSpanElement._nodeName = this._node.nodeName();
+      //@ts-ignore
+      attrSpanElement._nodeType = this._node.nodeType();
     }
     /* COHERENT_END */
 
@@ -1648,7 +1652,7 @@ export class ElementsTreeElement extends UI.TreeOutline.TreeElement {
         }
 
         if (attributes.find((attr) => attr.name.startsWith('data-'))) {
-          node.domModel().getDataBindingDataForNode(node.id).then((data) => {
+          node.domModel().getDataBindingDataForNode(node.id, node.nodeType(), node.nodeName()).then((data) => {
             for (let i = 0; i < attrElements.length; ++i) {
               const attrElement = attrElements[i];
               const showAttributeError = data?.dataBindAttributes?.find(({ attributeName, mutators }) =>

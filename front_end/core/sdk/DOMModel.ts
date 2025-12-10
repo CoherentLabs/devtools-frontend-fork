@@ -1495,8 +1495,10 @@ export class DOMModel extends SDKModel<EventTypes> {
     return this.nodeForId(containerNodeId);
   }
 
-  async getDataBindingDataForNode(nodeId: Protocol.DOM.NodeId): Promise<Protocol.DOM.GetDataBindingDataForNodeResponse|null> {
-    const response = await this.agent.invoke_getDataBindingDataForNode({nodeId});
+  async getDataBindingDataForNode(nodeId?: Protocol.DOM.NodeId, nodeType?: number, nodeName?: string): Promise<Protocol.DOM.GetDataBindingDataForNodeResponse | null> {
+    if (!nodeId || nodeType !== Node.ELEMENT_NODE || nodeName === 'DATABINDMETA' || !this.nodeForId(nodeId)) return null;
+
+    const response = await this.agent.invoke_getDataBindingDataForNode({ nodeId });
     if (response.getError()) {
       return null;
     }

@@ -73,7 +73,16 @@ enum CounterType {
   SimpleCounter,
   MemoryCounter,
   ScratchTextureManagerCounter
-}
+};
+
+const CounterColors = {
+  blue: "hsl(217, 72%, 29%)",
+  red: "hsl(359, 62%, 29%)",
+  green: "hsl(125, 71%, 29%)",
+  teak: "hsl(41, 61%, 29%)",
+  cyan: "#007994",
+  purple: "#771C7F"
+};
 
 export class CountersGraph extends UI.Widget.VBox {
   _delegate: TimelineModeViewDelegate;
@@ -138,22 +147,28 @@ export class CountersGraph extends UI.Widget.VBox {
 
     this._countersByName = new Map();
 
-    this._countersByName.set('Coherent_LayerTextures', this._createCounter('Layer Textures', 'hsl(239, 100%, 50%)', CounterType.SimpleCounter));
-    this._countersByName.set('Coherent_ScratchTextures', this._createCounter('Scratch Textures', 'hsl(120, 90%, 43%)', CounterType.SimpleCounter));
-    this._countersByName.set('Coherent_SurfacesCounter', this._createCounter('Surface Textures', 'hsl(181, 90%, 43%)', CounterType.SimpleCounter));
-    this._countersByName.set('Coherent_ImagesCounter', this._createCounter('Images Textures', 'hsl(304, 900%, 50%)', CounterType.SimpleCounter));
-    this._countersByName.set('Coherent_RenoirFrameMemory', this._createCounter('Renoir Frame Memory', 'hsl(304, 900%, 50%)', CounterType.MemoryCounter, Platform.NumberUtilities.bytesToString));
-    this._gpuMemoryCounter = this._createCounter(UIStrings.gpuMemory, 'hsl(300, 90%, 43%)', CounterType.MemoryCounter, Platform.NumberUtilities.bytesToString);
+    this._countersByName.set('jsHeapSizeUsed', this._createCounter('JS Heap', CounterColors.blue, CounterType.MemoryCounter));
+    this._countersByName.set('documents', this._createCounter('Documents', CounterColors.red, CounterType.MemoryCounter));
+    this._countersByName.set('nodes', this._createCounter('Nodes', CounterColors.green, CounterType.MemoryCounter));
+    this._countersByName.set('jsEventListeners', this._createCounter('Listeners', CounterColors.teak, CounterType.MemoryCounter));
 
-    this._STMScratchTexturesMemoryCurrentCounter = this._createCounter('STM (Scratch Textures) Memory', 'hsl(238, 100%, 42%)', CounterType.ScratchTextureManagerCounter, Platform.NumberUtilities.bytesToString);
-    this._STMScratchTexturesMemoryLimitCounter = this._createCounter('STM (Scratch Textures) Limit', 'hsla(360, 100%, 42%, 0.8)', CounterType.ScratchTextureManagerCounter, Platform.NumberUtilities.bytesToString)
+    this._countersByName.set('Coherent_RenoirFrameMemory', this._createCounter('Renoir Frame Memory', CounterColors.cyan, CounterType.MemoryCounter, Platform.NumberUtilities.bytesToString));
+    this._gpuMemoryCounter = this._createCounter(UIStrings.gpuMemory, CounterColors.purple, CounterType.MemoryCounter, Platform.NumberUtilities.bytesToString);
+
+    this._countersByName.set('Coherent_LayerTextures', this._createCounter('Layer Textures', CounterColors.blue, CounterType.SimpleCounter));
+    this._countersByName.set('Coherent_ScratchTextures', this._createCounter('Scratch Textures', CounterColors.green, CounterType.SimpleCounter));
+    this._countersByName.set('Coherent_SurfacesCounter', this._createCounter('Surface Textures', CounterColors.cyan, CounterType.SimpleCounter));
+    this._countersByName.set('Coherent_ImagesCounter', this._createCounter('Images Textures', CounterColors.teak, CounterType.SimpleCounter));
+
+    this._STMScratchTexturesMemoryCurrentCounter = this._createCounter('STM (Scratch Textures) Memory', CounterColors.blue, CounterType.ScratchTextureManagerCounter, Platform.NumberUtilities.bytesToString);
+    this._STMScratchTexturesMemoryLimitCounter = this._createCounter('STM (Scratch Textures) Limit', CounterColors.red, CounterType.ScratchTextureManagerCounter, Platform.NumberUtilities.bytesToString)
     this._counterUI[this._counterUI.length - 1].setShouldDrawDashed(true);
 
     this._STMScratchTexturesMemoryLimitCounter.setFixedBounds({min:0, max: 12 * 1024 * 1024  /* 12 MBs*/});
     this._STMScratchTexturesMemoryCurrentCounter.setFixedBounds({min:0, max: 12 * 1024 * 1024  /* 12 MBs*/});
 
-    this._STMLayerTexturesMemoryCurrentCounter = this._createCounter('STM (Layer Textures) Memory', 'hsl(89, 100%, 42%)', CounterType.ScratchTextureManagerCounter, Platform.NumberUtilities.bytesToString);
-    this._STMLayerTexturesMemoryLimitCounter = this._createCounter('STM (Layer Textures) Limit', 'hsla(317, 100%, 42%, 0.8)', CounterType.ScratchTextureManagerCounter, Platform.NumberUtilities.bytesToString)
+    this._STMLayerTexturesMemoryCurrentCounter = this._createCounter('STM (Layer Textures) Memory', CounterColors.green, CounterType.ScratchTextureManagerCounter, Platform.NumberUtilities.bytesToString);
+    this._STMLayerTexturesMemoryLimitCounter = this._createCounter('STM (Layer Textures) Limit', CounterColors.purple, CounterType.ScratchTextureManagerCounter, Platform.NumberUtilities.bytesToString)
     this._counterUI[this._counterUI.length - 1].setShouldDrawDashed(true);
 
     this._STMScratchTexturesMemoryLimitCounter.setFixedBounds({min:0, max: 20 * 1024 * 1024  /* 20 MBs*/});
@@ -521,7 +536,7 @@ export class CounterUI {
     this._filter.inputElement.classList.add('-theme-preserve-input');
     const parsedColor = Common.Color.Color.parse(graphColor);
     if (parsedColor) {
-      const colorWithAlpha = parsedColor.setAlpha(0.5).asString(Common.Color.Format.RGBA);
+      const colorWithAlpha = parsedColor.asString(Common.Color.Format.RGBA);
       const htmlElement = (this._filter.element as HTMLElement);
       if (colorWithAlpha) {
         htmlElement.style.backgroundColor = colorWithAlpha;

@@ -80,7 +80,7 @@ const CounterColors = {
   red: "hsl(359, 62%, 29%)",
   green: "hsl(125, 71%, 29%)",
   teak: "hsl(41, 61%, 29%)",
-  cyan: "#007994",
+  teal: "#2E7D72",
   purple: "#771C7F"
 };
 
@@ -152,12 +152,12 @@ export class CountersGraph extends UI.Widget.VBox {
     this._countersByName.set('nodes', this._createCounter('Nodes', CounterColors.green, CounterType.MemoryCounter));
     this._countersByName.set('jsEventListeners', this._createCounter('Listeners', CounterColors.teak, CounterType.MemoryCounter));
 
-    this._countersByName.set('Coherent_RenoirFrameMemory', this._createCounter('Renoir Frame Memory', CounterColors.cyan, CounterType.MemoryCounter, Platform.NumberUtilities.bytesToString));
+    this._countersByName.set('Coherent_RenoirFrameMemory', this._createCounter('Renoir Frame Memory', CounterColors.teal, CounterType.MemoryCounter, Platform.NumberUtilities.bytesToString));
     this._gpuMemoryCounter = this._createCounter(UIStrings.gpuMemory, CounterColors.purple, CounterType.MemoryCounter, Platform.NumberUtilities.bytesToString);
 
     this._countersByName.set('Coherent_LayerTextures', this._createCounter('Layer Textures', CounterColors.blue, CounterType.SimpleCounter));
     this._countersByName.set('Coherent_ScratchTextures', this._createCounter('Scratch Textures', CounterColors.green, CounterType.SimpleCounter));
-    this._countersByName.set('Coherent_SurfacesCounter', this._createCounter('Surface Textures', CounterColors.cyan, CounterType.SimpleCounter));
+    this._countersByName.set('Coherent_SurfacesCounter', this._createCounter('Surface Textures', CounterColors.teal, CounterType.SimpleCounter));
     this._countersByName.set('Coherent_ImagesCounter', this._createCounter('Images Textures', CounterColors.teak, CounterType.SimpleCounter));
 
     this._STMScratchTexturesMemoryCurrentCounter = this._createCounter('STM (Scratch Textures) Memory', CounterColors.blue, CounterType.ScratchTextureManagerCounter, Platform.NumberUtilities.bytesToString);

@@ -75,14 +75,45 @@ enum CounterType {
   ScratchTextureManagerCounter
 };
 
-const CounterColors = {
-  blue: "hsl(217, 72%, 29%)",
-  red: "hsl(359, 62%, 29%)",
-  green: "hsl(125, 71%, 29%)",
-  teak: "hsl(41, 61%, 29%)",
-  teal: "#2E7D72",
-  purple: "#771C7F"
+const CounterColorsDark = {
+  blue: "rgba(25, 103, 210, 0.7)",
+  red: "rgba(197, 34, 31, 0.7)",
+  green: "rgba(24, 128, 56, 0.7)",
+  teak: "rgba(192, 86, 0, 0.7)",
+  teal: "rgba(0, 121, 107, 0.7)",
+  purple: "rgba(123, 31, 162, 0.7)"
 };
+
+const ChartColorsDark = {
+  blue: "rgba(13, 71, 161, 0.9)",
+  red: "rgba(183, 28, 28, 0.9)",
+  green: "rgba(27, 94, 32, 0.9)",
+  teak: "rgba(230, 81, 0, 0.9)",
+  teal: "rgba(0, 77, 64, 0.9)",
+  purple: "rgba(74, 20, 140, 0.9)"
+};
+
+const CounterColorsLight = {
+  blue: "rgba(26, 115, 232, 0.6)",
+  red: "rgba(217, 48, 37, 0.6)",
+  green: "rgba(24, 128, 56, 0.6)",
+  teak: "rgba(227, 116, 0, 0.6)",
+  teal: "rgba(0, 121, 107, 0.6)",
+  purple: "rgba(147, 52, 230, 0.6)"
+};
+
+const ChartColorsLight = {
+  blue: "rgba(26, 115, 232, 0.7)",
+  red: "rgba(217, 48, 37, 0.7)",
+  green: "rgba(24, 128, 56, 0.7)",
+  teak: "rgba(227, 116, 0, 0.7)",
+  teal: "rgba(0, 121, 107, 0.7)",
+  purple: "rgba(147, 52, 230, 0.7)"
+};
+
+function isLightTheme() {
+  return document.querySelector(".-theme-with-dark-background") === null;
+}
 
 export class CountersGraph extends UI.Widget.VBox {
   _delegate: TimelineModeViewDelegate;
@@ -147,28 +178,38 @@ export class CountersGraph extends UI.Widget.VBox {
 
     this._countersByName = new Map();
 
-    this._countersByName.set('jsHeapSizeUsed', this._createCounter('JS Heap', CounterColors.blue, CounterType.MemoryCounter));
-    this._countersByName.set('documents', this._createCounter('Documents', CounterColors.red, CounterType.MemoryCounter));
-    this._countersByName.set('nodes', this._createCounter('Nodes', CounterColors.green, CounterType.MemoryCounter));
-    this._countersByName.set('jsEventListeners', this._createCounter('Listeners', CounterColors.teak, CounterType.MemoryCounter));
+    const isLight = isLightTheme();
 
-    this._countersByName.set('Coherent_RenoirFrameMemory', this._createCounter('Renoir Frame Memory', CounterColors.teal, CounterType.MemoryCounter, Platform.NumberUtilities.bytesToString));
-    this._gpuMemoryCounter = this._createCounter(UIStrings.gpuMemory, CounterColors.purple, CounterType.MemoryCounter, Platform.NumberUtilities.bytesToString);
+    const counterColors = isLight
+      ? CounterColorsLight
+      : CounterColorsDark;
 
-    this._countersByName.set('Coherent_LayerTextures', this._createCounter('Layer Textures', CounterColors.blue, CounterType.SimpleCounter));
-    this._countersByName.set('Coherent_ScratchTextures', this._createCounter('Scratch Textures', CounterColors.green, CounterType.SimpleCounter));
-    this._countersByName.set('Coherent_SurfacesCounter', this._createCounter('Surface Textures', CounterColors.teal, CounterType.SimpleCounter));
-    this._countersByName.set('Coherent_ImagesCounter', this._createCounter('Images Textures', CounterColors.teak, CounterType.SimpleCounter));
+    const chartColors = isLight
+      ? ChartColorsLight
+      : ChartColorsDark;
 
-    this._STMScratchTexturesMemoryCurrentCounter = this._createCounter('STM (Scratch Textures) Memory', CounterColors.blue, CounterType.ScratchTextureManagerCounter, Platform.NumberUtilities.bytesToString);
-    this._STMScratchTexturesMemoryLimitCounter = this._createCounter('STM (Scratch Textures) Limit', CounterColors.red, CounterType.ScratchTextureManagerCounter, Platform.NumberUtilities.bytesToString)
+    this._countersByName.set('jsHeapSizeUsed', this._createCounter('JS Heap', counterColors.blue, chartColors.blue, CounterType.MemoryCounter));
+    this._countersByName.set('documents', this._createCounter('Documents', counterColors.red, chartColors.red, CounterType.MemoryCounter));
+    this._countersByName.set('nodes', this._createCounter('Nodes', counterColors.green, chartColors.green, CounterType.MemoryCounter));
+    this._countersByName.set('jsEventListeners', this._createCounter('Listeners', counterColors.teak, chartColors.teak, CounterType.MemoryCounter));
+
+    this._countersByName.set('Coherent_RenoirFrameMemory', this._createCounter('Renoir Frame Memory', counterColors.teal, chartColors.teal, CounterType.MemoryCounter, Platform.NumberUtilities.bytesToString));
+    this._gpuMemoryCounter = this._createCounter(UIStrings.gpuMemory, counterColors.purple, chartColors.purple, CounterType.MemoryCounter, Platform.NumberUtilities.bytesToString);
+
+    this._countersByName.set('Coherent_LayerTextures', this._createCounter('Layer Textures', counterColors.blue, chartColors.blue, CounterType.SimpleCounter));
+    this._countersByName.set('Coherent_ScratchTextures', this._createCounter('Scratch Textures', counterColors.green, chartColors.green, CounterType.SimpleCounter));
+    this._countersByName.set('Coherent_SurfacesCounter', this._createCounter('Surface Textures', counterColors.teal, chartColors.teal, CounterType.SimpleCounter));
+    this._countersByName.set('Coherent_ImagesCounter', this._createCounter('Images Textures', counterColors.teak, chartColors.teak, CounterType.SimpleCounter));
+
+    this._STMScratchTexturesMemoryCurrentCounter = this._createCounter('STM (Scratch Textures) Memory', counterColors.blue, chartColors.blue, CounterType.ScratchTextureManagerCounter, Platform.NumberUtilities.bytesToString);
+    this._STMScratchTexturesMemoryLimitCounter = this._createCounter('STM (Scratch Textures) Limit', counterColors.red, chartColors.red, CounterType.ScratchTextureManagerCounter, Platform.NumberUtilities.bytesToString)
     this._counterUI[this._counterUI.length - 1].setShouldDrawDashed(true);
 
     this._STMScratchTexturesMemoryLimitCounter.setFixedBounds({min:0, max: 12 * 1024 * 1024  /* 12 MBs*/});
     this._STMScratchTexturesMemoryCurrentCounter.setFixedBounds({min:0, max: 12 * 1024 * 1024  /* 12 MBs*/});
 
-    this._STMLayerTexturesMemoryCurrentCounter = this._createCounter('STM (Layer Textures) Memory', CounterColors.green, CounterType.ScratchTextureManagerCounter, Platform.NumberUtilities.bytesToString);
-    this._STMLayerTexturesMemoryLimitCounter = this._createCounter('STM (Layer Textures) Limit', CounterColors.purple, CounterType.ScratchTextureManagerCounter, Platform.NumberUtilities.bytesToString)
+    this._STMLayerTexturesMemoryCurrentCounter = this._createCounter('STM (Layer Textures) Memory', counterColors.green, chartColors.green, CounterType.ScratchTextureManagerCounter, Platform.NumberUtilities.bytesToString);
+    this._STMLayerTexturesMemoryLimitCounter = this._createCounter('STM (Layer Textures) Limit', counterColors.purple, chartColors.purple, CounterType.ScratchTextureManagerCounter, Platform.NumberUtilities.bytesToString)
     this._counterUI[this._counterUI.length - 1].setShouldDrawDashed(true);
 
     this._STMScratchTexturesMemoryLimitCounter.setFixedBounds({min:0, max: 20 * 1024 * 1024  /* 20 MBs*/});
@@ -269,10 +310,10 @@ export class CountersGraph extends UI.Widget.VBox {
     this._currentValuesBar.id = 'counter-values-bar';
   }
 
-  _createCounter(uiName: string, color: string, counterType: CounterType, formatter?: ((arg0: number) => string)): Counter {
+  _createCounter(uiName: string, color: string, chartColor: string, counterType: CounterType, formatter?: ((arg0: number) => string)): Counter {
     const counter = new Counter(counterType);
     this._counters.push(counter);
-    const counterUI = new CounterUI(this, uiName, color, counter, counterType, formatter);
+    const counterUI = new CounterUI(this, uiName, color, chartColor, counter, counterType, formatter);
     this._counterUI.push(counterUI);
     return counter;
   }
@@ -524,7 +565,7 @@ export class CounterUI {
   _shouldDrawDashed: boolean;
 
   constructor(
-      countersPane: CountersGraph, title: string, graphColor: string, counter: Counter, counterType: CounterType,
+      countersPane: CountersGraph, title: string, graphColor: string, chartColor: string, counter: Counter, counterType: CounterType,
       formatter?: (arg0: number) => string) {
     this._countersPane = countersPane;
     this.counter = counter;
@@ -549,7 +590,7 @@ export class CounterUI {
 
     this._value = (countersPane._currentValuesBar as HTMLElement).createChild('span', 'memory-counter-value');
     this._value.style.color = graphColor;
-    this.graphColor = graphColor;
+    this.graphColor = chartColor;
     if (parsedColor) {
       this.limitColor = parsedColor.setAlpha(0.3).asString(Common.Color.Format.RGBA);
     }

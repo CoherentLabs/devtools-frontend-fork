@@ -2144,6 +2144,23 @@ export class TimelineUIUtils {
       return contentHelper.fragment;
     }
 
+    // COHERENT BEGIN
+    // Display the event arguments for all custom Coherent events
+    const isKnownRecordType = Object.values(recordTypes).includes(event.name as any);
+    if (event.name.startsWith('Coherent_') && !isKnownRecordType) {
+      for (const key in event.args) {
+        if (key === 'data' || key === 'beginData' || key === 'endData') {
+          continue;
+        }
+        try {
+          contentHelper.appendTextRow(key, JSON.stringify(event.args[key]));
+        } catch (e) {
+          contentHelper.appendTextRow(key, `<${typeof event.args[key]}>`);
+        }
+      }
+    }
+    // COHERENT END
+
     switch (event.name) {
       case recordTypes.GCEvent:
       case recordTypes.MajorGC:
